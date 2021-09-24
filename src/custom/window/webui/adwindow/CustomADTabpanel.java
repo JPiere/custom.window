@@ -2144,19 +2144,22 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 	@Override
 	public DetailPane getDetailPane()
 	{
-		return null;
+		DetailPane noUse = new DetailPane();
+		return noUse;
 	}
 
 	@Override
 	public GridView getGridView()
 	{
-		return null;
+		GridView noUse = new GridView();
+		return noUse;
 	}
 
 	@Override
 	public ADTreePanel getTreePanel()
 	{
-		return null;
+		ADTreePanel noUse = new ADTreePanel();
+		return noUse;
 	}
 
 }

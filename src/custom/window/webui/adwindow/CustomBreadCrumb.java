@@ -157,7 +157,7 @@ public class CustomBreadCrumb extends Div implements EventListener<Event> {
 		if (clickable) {
 			BreadCrumbLink a = new BreadCrumbLink();
 			a.setLabel(label);
-			a.setId("breadcrumb-"+label);
+			a.setId("breadcrumb-"+id+"-"+label);
 			a.setPathId(id);
 			a.addEventListener(Events.ON_CLICK, this);
 			if (layout.getChildren().size() > 0) {
@@ -168,7 +168,7 @@ public class CustomBreadCrumb extends Div implements EventListener<Event> {
 			layout.appendChild(a);
 		} else {
 			Label pathLabel = new Label();
-			pathLabel.setId("breadcrumb-"+label);
+			pathLabel.setId("breadcrumb-"+id+"-"+label);
 			pathLabel.setValue(label);
 			if (layout.getChildren().size() > 0) {
 				Label symbol = new Label();

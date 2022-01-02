@@ -1288,7 +1288,11 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
     	}
     	else if (event.getName().equals(ON_FOCUS_DEFER_EVENT)) {
     		HtmlBasedComponent comp = (HtmlBasedComponent) event.getData();
-    		comp.focus();
+    		if (comp instanceof CustomADTabpanel)
+    			((CustomADTabpanel)comp).focusToFirstEditor(false);
+    		else
+    			comp.focus();
+    		// 
     	}
     }
 

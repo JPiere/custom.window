@@ -12,6 +12,7 @@
  *****************************************************************************/
 package custom.window.webui.adwindow;
 
+import org.adempiere.webui.adwindow.ADWindowToolbar;
 import org.adempiere.webui.adwindow.IADTabpanel;
 import org.compiere.util.Evaluatee;
 import org.zkoss.zk.ui.Component;
@@ -49,4 +50,11 @@ public interface CustomIADTabpanel extends IADTabpanel, Component, Evaluatee {
 	 * @return treepanel instance
 	 */
 	public abstract CustomADTreePanel getCustomTreePanel();
+	
+	/**
+	 * Enabled/Disabled tab toolbar button
+	 * 
+	 * @param toolbar - {@link ADWindowToolbar}
+	 */
+	public void updateToolbar(CustomADWindowToolbar toolbar);
 }

@@ -28,6 +28,8 @@ import java.util.logging.Level;
 import org.adempiere.webui.AdempiereIdGenerator;
 import org.adempiere.webui.LayoutUtils;
 import org.adempiere.webui.adwindow.ADTreePanel;
+import org.adempiere.webui.adwindow.ADWindowToolbar;
+import org.adempiere.webui.adwindow.AbstractADWindowContent;
 import org.adempiere.webui.adwindow.DetailPane;
 import org.adempiere.webui.adwindow.GridView;
 import org.adempiere.webui.component.Button;
@@ -59,6 +61,7 @@ import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.util.Clients;
 import org.zkoss.zul.Hlayout;
+import org.zkoss.zul.Toolbar;
 import org.zkoss.zul.event.ListDataEvent;
 
 /**
@@ -83,6 +86,10 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	 *
 	 */
 	private static final long serialVersionUID = -2238411612673317537L;
+	
+	public CustomADSortTab()
+	{
+	}
 
 	/**
 	 *	Sort Tab Constructor
@@ -106,7 +113,36 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 			}
 		});
 	}	//	ADSortTab
+	
+	@Override
+	public void init(AbstractADWindowContent winPanel, GridTab gridTab)
+	{
+	}
 
+	/**
+	 * Initiate
+	 * 
+	 * @param winPanel
+	 * @param gridTab
+	 */
+	public void init(CustomAbstractADWindowContent winPanel, GridTab gridTab)
+	{
+		this.adWindowPanel = winPanel;
+		if (log.isLoggable(Level.CONFIG)) log.config("SortOrder=" + gridTab.getAD_ColumnSortOrder_ID() + ", SortYesNo=" + gridTab.getAD_ColumnSortYesNo_ID());
+		m_WindowNo = winPanel.getWindowNo();
+		this.gridTab = gridTab;
+
+		m_AD_Table_ID = gridTab.getAD_Table_ID();
+		ZKUpdateUtil.setVflex(this, "true");
+
+		addEventListener(ON_ACTIVATE_EVENT, new EventListener<Event>() {
+			@Override
+			public void onEvent(Event event) throws Exception {
+				removeAttribute(ATTR_ON_ACTIVATE_POSTED);
+			}
+		});
+	} // init
+	
 	/**	Logger			*/
 	protected static final CLogger log = CLogger.getCLogger(CustomADSortTab.class);
 	private int			m_WindowNo;
@@ -673,7 +709,6 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 
 
 	/** (non-Javadoc)
-	 * @see org.compiere.grid.APanelTab#saveData()
 	 */
 	public void saveData()
 	{
@@ -1059,6 +1094,36 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	{
 		return false;
 	}
+	
+	@Override
+	public List<org.zkoss.zul.Button> getToolbarButtons()
+	{
+		return new ArrayList<org.zkoss.zul.Button>();
+	}
+
+	@Override
+	public boolean isEnableCustomizeButton()
+	{
+		return false;
+	}
+
+	@Override
+	public boolean isEnableProcessButton()
+	{
+		return false;
+	}
+
+	@Override
+	public void updateToolbar(ADWindowToolbar toolbar)
+	{
+
+	}
+
+	@Override
+	public void updateDetailToolbar(Toolbar toolbar)
+	{
+
+	}
 
 	@Override
 	public GridView getGridView() {
@@ -1079,6 +1144,13 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	public CustomADTreePanel getCustomTreePanel() {
 
 		return null;
+	}
+
+	@Override
+	public void updateToolbar(CustomADWindowToolbar toolbar) 
+	{
+
+		
 	}
 }	//ADSortTab
 

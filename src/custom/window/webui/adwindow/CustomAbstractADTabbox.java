@@ -56,7 +56,6 @@ public abstract class CustomAbstractADTabbox extends AbstractUIPart implements C
 
     /**
      *  Add Tab
-     *  @param tabName name
      *  @param gTab grid tab model
      *  @param tabElement GridController or VSortTab
      */

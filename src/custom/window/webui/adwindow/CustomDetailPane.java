@@ -95,19 +95,19 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 	 */
 	private static final long serialVersionUID = -6839563468328913930L;
 
-	private static final String BTN_PROCESS_ID = "BtnProcess";
+	public static final String BTN_PROCESS_ID = "BtnProcess";
 
-	private static final String BTN_DELETE_ID = "BtnDelete";
+	public static final String BTN_DELETE_ID = "BtnDelete";
 
-	private static final String BTN_EDIT_ID = "BtnEdit";
+	public static final String BTN_EDIT_ID = "BtnEdit";
 
-	private static final String BTN_NEW_ID = "BtnNew";
+	public static final String BTN_NEW_ID = "BtnNew";
 
-	private static final String BTN_SAVE_ID = "BtnSave";
+	public static final String BTN_SAVE_ID = "BtnSave";
 
-	private static final String BTN_QUICK_FORM_ID = "BtnQuickForm";
+	public static final String BTN_QUICK_FORM_ID = "BtnQuickForm";
 
-	private static final String BTN_CUSTOMIZE_ID = "BtnCustomize";
+	public static final String BTN_CUSTOMIZE_ID = "BtnCustomize";
 
 	private static final String BTN_TOGGLE_ID = "BtnToggle";
 
@@ -423,7 +423,7 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 				}
 			}
 		});
-		button.setTooltiptext(Util.cleanAmp(Msg.getMsg(Env.getCtx(), "QuickForm")));
+		button.setTooltiptext(Util.cleanAmp(Msg.getMsg(Env.getCtx(), "QuickForm")) + "    Shift+Alt+Q");
 		buttons.put(BTN_QUICK_FORM_ID.substring(3, BTN_QUICK_FORM_ID.length()), button);
 
 		// ADD Customize grid button
@@ -460,26 +460,38 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 
 						String labelKey = actionId + ".label";
 						String tooltipKey = actionId + ".tooltip";
-						String label = Msg.getMsg(Env.getCtx(), labelKey);
-						String tooltiptext = Msg.getMsg(Env.getCtx(), tooltipKey);
+						String label = Msg.getMsg(Env.getCtx(), labelKey, true);
+						String tooltiptext = Msg.getMsg(Env.getCtx(), labelKey, false);
+						if (Util.isEmpty(tooltiptext, true))
+							tooltiptext = Msg.getMsg(Env.getCtx(), tooltipKey, true);
 						if ( labelKey.equals(label) ) {
 							label = toolbarButton.getName();
 						}
-						if ( tooltipKey.equals(tooltiptext) ) {
-							tooltipKey = null;
+						if ( tooltipKey.equals(tooltiptext) || labelKey.equals(tooltiptext)) {
+							tooltiptext = label;
 						}
 						ToolBarButton btn = new ToolBarButton();
 						btn.setName("Btn"+toolbarButton.getComponentName());
 						btn.setId("Btn"+toolbarButton.getComponentName());
 						btn.setTooltiptext(tooltiptext);
 						btn.setDisabled(false);
-
-						AImage aImage = Actions.getActionImage(actionId);
-						if ( aImage != null ) {
-							btn.setImageContent(aImage);
-						} else {
-							btn.setLabel(label);
-						}
+						btn.setIconSclass(null);
+						if (ThemeManager.isUseFontIconForImage()) {
+        					String iconSclass = Actions.getActionIconSclass(actionId);
+        					if (!Util.isEmpty(iconSclass, true)) {
+        						btn.setIconSclass(iconSclass);
+        						LayoutUtils.addSclass("font-icon-toolbar-button", btn);
+        					}
+        				}
+        				//not using font icon, fallback to image or label
+        				if (Util.isEmpty(btn.getIconSclass(), true)) {
+							AImage aImage = Actions.getActionImage(actionId);
+							if ( aImage != null ) {
+								btn.setImageContent(aImage);
+							} else {
+								btn.setLabel(label);
+							}
+        				}
 
 						ToolbarCustomButton toolbarCustomBtn = new ToolbarCustomButton(toolbarButton, btn, actionId, tabPanel.getGridTab().getWindowNo(), tabPanel.getGridTab().getTabNo());
 						tp.toolbarCustomButtons.put(btn, toolbarCustomBtn);
@@ -573,7 +585,8 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 	protected void onProcess(Component button) {
 		ProcessButtonPopup popup = new ProcessButtonPopup();
 		CustomADTabpanel adtab = (CustomADTabpanel) getSelectedADTabpanel();
-		popup.render(adtab.getToolbarButtons());
+		if (adtab.getToolbarButtons() != null && adtab.getToolbarButtons().size() > 0)
+			popup.render(adtab.getToolbarButtons());
 		if (popup.getChildren().size() > 0) {
 			popup.setPage(button.getPage());
 			popup.open(button, "after_start");
@@ -889,6 +902,9 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
         		}
         	}
         }
+
+		// update from customized implementation
+		adtab.updateDetailToolbar(toolbar);
 	}
 
 	private void updateProcessToolbar() {
@@ -908,7 +924,8 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
         			if (adtab.getGridTab().isSortTab()) {
         				btn.setDisabled(true);
         			} else {
-        				btn.setDisabled(((CustomADTabpanel)adtab).getToolbarButtons().isEmpty());
+        				boolean isToolbarDisabled = ( ((CustomADTabpanel)adtab).getToolbarButtons() == null || ((CustomADTabpanel)adtab).getToolbarButtons().isEmpty());
+        				btn.setDisabled(isToolbarDisabled);
         			}
         			break;
         		}
@@ -1034,6 +1051,7 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
     private static final int VK_S = 0x53;
     private static final int VK_D = 0x44;
     private static final int VK_O = 0x4F;
+    private static final int VK_Q = 0x51;
 	private void onCtrlKeyEvent(KeyEvent keyEvent) {
 		ToolBarButton btn = null;
 		if (keyEvent.isAltKey() && !keyEvent.isCtrlKey() && keyEvent.isShiftKey()) { // Shift+Alt key
@@ -1059,6 +1077,8 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 				btn = getSelectedPanel().getToolbarButton(BTN_DELETE_ID);
 			} else if (keyEvent.getKeyCode() == VK_O) {
 				btn = getSelectedPanel().getToolbarButton(BTN_PROCESS_ID);
+			} else if (keyEvent.getKeyCode() == VK_Q) {
+				btn = getSelectedPanel().getToolbarButton(BTN_QUICK_FORM_ID);
 			}
 		}
 		if (btn != null) {

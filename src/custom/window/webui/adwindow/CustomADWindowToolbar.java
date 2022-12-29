@@ -31,6 +31,7 @@ import org.adempiere.webui.LayoutUtils;
 import org.adempiere.webui.action.Actions;
 import org.adempiere.webui.action.IAction;
 import org.adempiere.webui.adwindow.ToolbarCustomButton;
+import org.adempiere.webui.apps.AEnv;
 import org.adempiere.webui.component.Combobox;
 import org.adempiere.webui.component.FToolbar;
 import org.adempiere.webui.component.Tabpanel;
@@ -301,12 +302,16 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
         			if (serviceHolder != null && action != null) {
         				String labelKey = actionId + ".label";
         				String tooltipKey = actionId + ".tooltip";
-        				String label = Msg.getMsg(Env.getCtx(), labelKey);
-        				String tooltiptext = Msg.getMsg(Env.getCtx(), tooltipKey);
+        				String label = Msg.getMsg(Env.getCtx(), labelKey, true);
+        				String tooltiptext = Msg.getMsg(Env.getCtx(), labelKey, false);
+        				if (Util.isEmpty(tooltiptext, true))
+        					tooltiptext = Msg.getMsg(Env.getCtx(), tooltipKey, true);
+        				else
+        					tooltipKey = labelKey;
         				if (labelKey.equals(label)) {
         					label = button.getName();
         				}
-        				if (tooltipKey.equals(tooltiptext)) {
+        				if (tooltipKey.equals(tooltiptext) || labelKey.equals(tooltiptext)) {
         					tooltipKey = null;
         				}
         				ToolBarButton btn = createButton(button.getComponentName(), null, tooltipKey);
@@ -314,11 +319,22 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
         				btn.setId(button.getName());
         				btn.setDisabled(false);
 
-        				AImage aImage = Actions.getActionImage(actionId);
-        				if (aImage != null) {
-        					btn.setImageContent(aImage);
-        				} else {
-        					btn.setLabel(label);
+        				btn.setIconSclass(null);
+        				if (ThemeManager.isUseFontIconForImage()) {
+        					String iconSclass = Actions.getActionIconSclass(actionId);
+        					if (!Util.isEmpty(iconSclass, true)) {
+        						btn.setIconSclass(iconSclass);
+        						LayoutUtils.addSclass("font-icon-toolbar-button", btn);
+        					}
+        				}
+        				//not using font icon, fallback to image or label
+        				if (Util.isEmpty(btn.getIconSclass(), true)) {
+        					AImage aImage = Actions.getActionImage(actionId);
+        					if (aImage != null) {
+        						btn.setImageContent(aImage);
+        					} else {
+        						btn.setLabel(label);
+        					}
         				}
 
         				ToolbarCustomButton toolbarCustomBtn = new ToolbarCustomButton(button, btn, actionId, windowNo);
@@ -382,7 +398,10 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
 	        	btn.setImage(ThemeManager.getThemeResource("images/"+image + suffix));
         	}
         }
-        btn.setTooltiptext(Msg.getMsg(Env.getCtx(),tooltip));
+        String tooltipText = Msg.getMsg(Env.getCtx(),tooltip,false);
+        if (Util.isEmpty(tooltipText, true))
+        	tooltipText = Msg.getMsg(Env.getCtx(),tooltip,true);
+        btn.setTooltiptext(tooltipText);
         LayoutUtils.addSclass("toolbar-button", btn);
 
         buttons.put(name, btn);
@@ -588,7 +607,7 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
     public void enableSave(boolean enabled)
     {
         this.btnSave.setDisabled(!enabled);
-    	this.btnSaveAndCreate.setDisabled(!enabled);
+        this.btnSaveAndCreate.setDisabled(!(isNewEnabled() || isSaveEnable()));
     }
 
     public boolean isSaveEnable() {
@@ -622,6 +641,7 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
     public void enableNew(boolean enabled)
     {
         this.btnNew.setDisabled(!enabled);
+        this.btnSaveAndCreate.setDisabled(!(isNewEnabled() || isSaveEnable()));
     }
 
     public void enableCopy(boolean enabled)
@@ -724,6 +744,9 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
     }
 
 	private void onCtrlKeyEvent(KeyEvent keyEvent) {
+		if (windowContent != null && windowContent.isBlock())
+			return;
+		
 		ToolBarButton btn = null;
 		if (keyEvent.isAltKey() && !keyEvent.isCtrlKey() && !keyEvent.isShiftKey())
 		{
@@ -1193,6 +1216,10 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
 	}
 
     public void refreshUserQuery(int AD_Tab_ID, int AD_UserQuery_ID) {
+    	if (AEnv.getOrSetExecutionAttribute(getClass().getName()+".refreshUserQuery")) {
+    		return;
+    	}
+    	
     	fQueryName.getItems().clear();
         userQueries = MUserQuery.get(Env.getCtx(), AD_Tab_ID);
         fQueryName.appendItem("");

@@ -192,7 +192,7 @@ public class CustomCompositeADTabbox extends CustomAbstractADTabbox
 							if (result)
 							{
 								onEditDetail(row, formView);
-								adWindowPanel.onQuickForm();
+								adWindowPanel.onQuickForm(true);
 							}
 						}
 					});
@@ -310,7 +310,7 @@ public class CustomCompositeADTabbox extends CustomAbstractADTabbox
 			headerTab.switchRowPresentation();
 		}
 
-		if (!headerTab.getGridTab().isSortTab())
+		if (!headerTab.getGridTab().isSortTab() && headerTab instanceof CustomADTabpanel)
 			headerTab.getGridTab().setCurrentRow(row, true);
 
 		if (headerTab.isGridView()) {
@@ -1002,11 +1002,15 @@ public class CustomCompositeADTabbox extends CustomAbstractADTabbox
 			headerTab.getCustomDetailPane().updateToolbar(false, true);
 		} else {
 			tabPanel.dynamicDisplay(0);
-			RowRenderer<Object[]> renderer = tabPanel.getCustomGridView().getListbox().getRowRenderer();
-			CustomGridTabRowRenderer gtr = (CustomGridTabRowRenderer)renderer;
-			Row row = gtr.getCurrentRow();
-			if (row != null)
-				gtr.setCurrentRow(row);
+			if (tabPanel.getCustomGridView() != null && tabPanel.getCustomGridView().getListbox() != null) {
+				RowRenderer<Object[]> renderer = tabPanel.getCustomGridView().getListbox().getRowRenderer();
+				if (renderer != null) {
+					CustomGridTabRowRenderer gtr = (CustomGridTabRowRenderer)renderer;
+					Row row = gtr.getCurrentRow();
+					if (row != null)
+						gtr.setCurrentRow(row);
+				}
+			}
 		}
 		if (wasForm) {
 			// maintain form on header when zooming to a detail tab

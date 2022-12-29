@@ -185,7 +185,7 @@ public class CustomQuickGridTabRowRenderer
 	/**
 	 * @param row
 	 * @param data
-	 * @see RowRenderer#render(Row, Object)
+	 * @param index
 	 */
 	@Override
 	public void render(Row row, Object[] data, int index) throws Exception {

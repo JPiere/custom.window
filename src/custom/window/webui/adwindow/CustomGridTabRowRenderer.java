@@ -79,7 +79,7 @@ import org.zkoss.zul.impl.XulElement;
  *
  * @author Teo Sarca, teo.sarca@gmail.com
  * 		<li>BF [ 2996608 ] GridPanel is not displaying time
- * 			https://sourceforge.net/tracker/?func=detail&aid=2996608&group_id=176962&atid=955896
+ * 			https://sourceforge.net/p/adempiere/zk-web-client/420/
  */
 public class CustomGridTabRowRenderer implements RowRenderer<Object[]>, RowRendererExt, RendererCtrl, EventListener<Event> {
 
@@ -200,13 +200,31 @@ public class CustomGridTabRowRenderer implements RowRenderer<Object[]>, RowRende
 	}
 
 	/**
+	 * Check existence of readonly editor and return display text
+	 * @param value
+	 * @param gridField
+	 * @param rowIndex
+	 * @return display text
+	 */
+	protected String getDisplayTextWithEditorCheck(Object value, GridField gridField, int rowIndex) {
+		WEditor readOnlyEditor = readOnlyEditors.get(gridField);
+		if (readOnlyEditor == null) {
+			readOnlyEditor = WebEditorFactory.getEditor(gridField, true, readOnlyEditorConfiguration);
+			if (readOnlyEditor != null) {
+				readOnlyEditors.put(gridField, readOnlyEditor);
+			}
+		}
+		return getDisplayText(value, gridField, rowIndex);
+	}
+	
+	/**
 	 * call {@link #getDisplayText(Object, GridField, int, boolean)} with isForceGetValue = false
 	 * @param value
 	 * @param gridField
 	 * @param rowIndex
-	 * @return
+	 * @return display text
 	 */
-	private String getDisplayText(Object value, GridField gridField, int rowIndex){
+	public String getDisplayText(Object value, GridField gridField, int rowIndex){
 		return getDisplayText(value, gridField, rowIndex, false);
 	}
 
@@ -216,7 +234,7 @@ public class CustomGridTabRowRenderer implements RowRenderer<Object[]>, RowRende
 	 * @param gridField
 	 * @param rowIndex
 	 * @param isForceGetValue
-	 * @return
+	 * @return display text
 	 */
 	private String getDisplayText(Object value, GridField gridField, int rowIndex, boolean isForceGetValue)
 	{
@@ -417,7 +435,7 @@ public class CustomGridTabRowRenderer implements RowRenderer<Object[]>, RowRende
 	/**
 	 * @param row
 	 * @param data
-	 * @see RowRenderer#render(Row, Object)
+	 * @param index
 	 */
 	@Override
 	public void render(Row row, Object[] data, int index) throws Exception {
@@ -436,6 +454,7 @@ public class CustomGridTabRowRenderer implements RowRenderer<Object[]>, RowRende
 				gridTabFields = gridTab.getFields();
 				isGridViewCustomized = gridTabFields.length != gridPanelFields.length;
 			}
+			gridPanel.autoHideEmptyColumns();
 		}
 
 		if (grid == null)

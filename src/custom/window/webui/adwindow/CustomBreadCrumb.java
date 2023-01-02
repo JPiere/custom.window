@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.adempiere.webui.AdempiereWebUI;
 import org.adempiere.webui.LayoutUtils;
+import org.adempiere.webui.adwindow.ADWindow;
 import org.adempiere.webui.adwindow.BreadCrumbLink;
 import org.adempiere.webui.component.Label;
 import org.adempiere.webui.component.Menupopup;
@@ -50,6 +51,7 @@ import org.zkoss.zk.ui.util.Clients;
 import org.zkoss.zul.Div;
 import org.zkoss.zul.Hlayout;
 import org.zkoss.zul.Menuitem;
+import org.zkoss.zul.Window;
 
 /**
  * @author hengsin
@@ -207,9 +209,9 @@ public class CustomBreadCrumb extends Div implements EventListener<Event> {
 				if (linkPopup != null && linkPopup.getPage() != null && linkPopup.isVisible()) {
 					if (event.getName().equals(Events.ON_MOUSE_OUT)) {
 						linkPopup.setAttribute(ON_MOUSE_OUT_ECHO_EVENT, Boolean.TRUE);
-						StringBuilder script = new StringBuilder("setTimeout(function(){var w=zk('#")
+						StringBuilder script = new StringBuilder("setTimeout(function(){let w=zk('#")
 							.append(CustomBreadCrumb.this.getUuid()).append("').$();")
-							.append("var e=new zk.Event(w, '")
+							.append("let e=new zk.Event(w, '")
 							.append(ON_MOUSE_OUT_ECHO_EVENT)
 							.append("', null, {toServer:true});")
 							.append("zAu.send(e);},500)");
@@ -229,9 +231,9 @@ public class CustomBreadCrumb extends Div implements EventListener<Event> {
 						if (linkPopup != null && linkPopup.getPage() != null)
 							linkPopup.detach();
 						linkPopup = new Menupopup();
-						StringBuilder script = new StringBuilder("setTimeout(function(){var w=zk('#")
+						StringBuilder script = new StringBuilder("setTimeout(function(){let w=zk('#")
 							.append(event.getTarget().getUuid()).append("').$();")
-							.append("var e=new zk.Event(w, '")
+							.append("let e=new zk.Event(w, '")
 							.append(ON_MOUSE_OVER_ECHO_EVENT)
 							.append("', null, {toServer:true});")
 							.append("zAu.send(e);},500)");
@@ -258,9 +260,9 @@ public class CustomBreadCrumb extends Div implements EventListener<Event> {
 					linkPopup.appendChild(item);
 				}
 
-				StringBuilder script = new StringBuilder("setTimeout(function(){var w=zk('#")
+				StringBuilder script = new StringBuilder("setTimeout(function(){let w=zk('#")
 					.append(CustomBreadCrumb.this.getUuid()).append("').$();")
-					.append("var e=new zk.Event(w, '")
+					.append("let e=new zk.Event(w, '")
 					.append(ON_MOUSE_OUT_ECHO_EVENT)
 					.append("', null, {toServer:true});")
 					.append("zAu.send(e);},500)");
@@ -308,7 +310,12 @@ public class CustomBreadCrumb extends Div implements EventListener<Event> {
 				return;
 
 			String title = Msg.getMsg(Env.getCtx(), "Who") + m_text;
-			new WRecordInfo (title, m_dse, m_gridTab);
+			WRecordInfo winfo = new WRecordInfo (title, m_dse, m_gridTab);
+			winfo.addCallback(Window.AFTER_PAGE_DETACHED, t -> {
+				ADWindow adwindow = ADWindow.findADWindow(CustomBreadCrumb.this);
+				if (adwindow != null)
+					adwindow.getADWindowContent().focusToLastFocusEditor();
+			});
 		} else if (event.getTarget() == btnFirst) {
 			if (toolbarListener != null)
 				toolbarListener.onFirst();

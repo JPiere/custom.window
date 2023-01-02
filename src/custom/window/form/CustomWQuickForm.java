@@ -34,7 +34,7 @@ import org.adempiere.webui.component.ZkCssHelper;
 import org.adempiere.webui.session.SessionManager;
 import org.adempiere.webui.util.ZKUpdateUtil;
 //import org.adempiere.webui.window.CustomizeGridViewDialog; JPIERE
-import org.adempiere.webui.window.FDialog;
+import org.adempiere.webui.window.Dialog;
 import org.compiere.model.DataStatusEvent;
 import org.compiere.model.DataStatusListener;
 import org.compiere.model.GridField;
@@ -111,6 +111,8 @@ public class CustomWQuickForm extends Window implements EventListener <Event>, D
 		// To maintain parent-child Quick Form
 		prevQGV = adWinContent.getCurrQGV();
 		adWinContent.setCurrQGV(quickGridView);
+		
+		addCallback(AFTER_PAGE_DETACHED, t -> adWinContent.focusToLastFocusEditor());
 	}
 
 	protected void initForm( )
@@ -221,7 +223,7 @@ public class CustomWQuickForm extends Window implements EventListener <Event>, D
 	{
 		if (gridTab.getTableModel().getRowChanged() > -1)
 		{
-			FDialog.ask(windowNo, this, "SaveChanges?", new Callback <Boolean>() {
+			Dialog.ask(windowNo, "SaveChanges?", new Callback <Boolean>() {
 
 				@Override
 				public void onCallback(Boolean result)
@@ -302,7 +304,7 @@ public class CustomWQuickForm extends Window implements EventListener <Event>, D
 		final int[] indices = gridTab.getSelection();
 		if (indices.length > 0)
 		{
-			FDialog.ask(windowNo, this, "DeleteRecord?", new Callback <Boolean>() {
+			Dialog.ask(windowNo, "DeleteRecord?", new Callback <Boolean>() {
 
 				@Override
 				public void onCallback(Boolean result)

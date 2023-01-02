@@ -43,7 +43,7 @@ import org.adempiere.webui.component.SimpleListModel;
 import org.adempiere.webui.factory.ButtonFactory;
 import org.adempiere.webui.theme.ThemeManager;
 import org.adempiere.webui.util.ZKUpdateUtil;
-import org.adempiere.webui.window.FDialog;
+import org.adempiere.webui.window.Dialog;
 import org.compiere.model.GridTab;
 import org.compiere.model.MRole;
 import org.compiere.model.MSysConfig;
@@ -781,7 +781,7 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 			setIsChanged(false);
 		}
 		else {
-			FDialog.error(m_WindowNo, null, "SaveError", info.toString());
+			Dialog.error(m_WindowNo, "SaveError", info.toString());
 		}
 	}	//	saveData
 

@@ -40,7 +40,7 @@ import org.adempiere.webui.component.Rows;
 import org.adempiere.webui.component.Window;
 import org.adempiere.webui.event.DialogEvents;
 import org.adempiere.webui.util.ZKUpdateUtil;
-import org.adempiere.webui.window.FDialog;
+import org.adempiere.webui.window.Dialog;
 import org.compiere.model.GridTab;
 import org.compiere.util.Env;
 import org.compiere.util.Msg;
@@ -239,7 +239,7 @@ public class CustomExportAction implements EventListener<Event>
 		}else if (event.getTarget().equals(cboType) && event.getName().equals(Events.ON_SELECT)) {
 			displayExportTabSelection();
 		}else if (event.getName().equals("onExporterException")){
-			FDialog.error(0, winExportFile, "FileInvalidExtension");
+			Dialog.error(0, "FileInvalidExtension");
 			winExportFile.onClose();
 		}
 	}

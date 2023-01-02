@@ -42,7 +42,7 @@ import org.adempiere.webui.session.SessionManager;
 import org.adempiere.webui.theme.ITheme;
 import org.adempiere.webui.theme.ThemeManager;
 import org.adempiere.webui.util.ZKUpdateUtil;
-import org.adempiere.webui.window.FDialog;
+import org.adempiere.webui.window.Dialog;
 import org.compiere.model.GridTab;
 import org.compiere.model.MRole;
 import org.compiere.model.MSysConfig;
@@ -125,6 +125,8 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
     private ToolBarButton btnChat;
 
     private ToolBarButton btnPostIt;
+
+    private ToolBarButton btnLabel;
 
     private ToolBarButton btnCustomize;
 
@@ -233,6 +235,7 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
         btnAttachment = createButton("Attachment", "Attachment", "Attachment");
         btnPostIt = createButton("PostIt", "PostIt", "PostIt");
         btnChat = createButton("Chat", "Chat", "Chat");
+        btnLabel = createButton("Label", "Label", "Label");
         btnGridToggle = createButton("Toggle", "Multi", "Toggle");
         btnGridToggle.setTooltiptext(btnGridToggle.getTooltiptext()+ "    Alt+T");
         btnParentRecord = createButton("ParentRecord", "Parent", "ParentRecord");
@@ -581,7 +584,7 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
 		    	if (msg == null) {
 		    		msg = "Could not invoke Toolbar listener method: " + methodName + "()";
 		    	}
-		    	FDialog.error(windowNo, this, "Error", msg);
+		    	Dialog.error(windowNo, "Error", msg);
 		    	log.log(Level.SEVERE, msg, e);
 		    }
 		}
@@ -736,6 +739,15 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
     public void enablePostIt(boolean enabled)
     {
         this.btnPostIt.setDisabled(!enabled);
+    }
+
+    /**
+     * Enable/disable the label button
+     * @param enabled
+     */
+    public void enableLabel(boolean enabled)
+    {
+        this.btnLabel.setDisabled(!enabled);
     }
 
     public Event getEvent()
@@ -980,6 +992,24 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
 				}
 			}
 		}
+		pressedLogic();
+		readOnlyLogic();
+	}
+
+	private void pressedLogic()
+	{
+		for (ToolbarCustomButton toolbarCustomBtn : toolbarCustomButtons)
+		{
+			toolbarCustomBtn.pressedLogic();
+		}
+	}
+
+	private void readOnlyLogic()
+	{
+		for (ToolbarCustomButton toolbarCustomBtn : toolbarCustomButtons)
+		{
+			toolbarCustomBtn.readOnlyLogic();
+		}
 	}
 
 	@Override
@@ -1002,31 +1032,31 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
 		LayoutUtils.addSclass("mobile", this);
 		addEventListener("onOverflowButton", evt -> onOverflowButton(evt));
 		this.setWidgetOverride("toolbarScrollable", "function (wgt) {\n" +
-				"	var total = jq(wgt.$n()).width();\n" +
-				"	var w = wgt.firstChild;\n" +
-				"	var a = " + !mobileShowMoreButtons.isEmpty() + ";\n" +
+				"	let total = jq(wgt.$n()).width();\n" + 
+				"	let w = wgt.firstChild;\n" + 
+				"	let a = " + !mobileShowMoreButtons.isEmpty() + ";\n" + 
 				"\n" +
 				"	// make sure all images are loaded.\n" +
 				"	if (zUtl.isImageLoading()) {\n" +
-				"		var f = arguments.callee;\n" +
+				"		let f = arguments.callee;\n" + 
 				"		setTimeout(function () {\n" +
 				"			return f(wgt);\n" +
 				"		}, 20);\n" +
 				"		return;\n" +
 				"	}\n" +
 				"	for (; w; w = w.nextSibling) {\n" +
-				"		var ow = jq(w.$n()).outerWidth(true);\n" +
+				"		let ow = jq(w.$n()).outerWidth(true);\n" +
 				"		if (typeof ow != 'undefined') {total -= ow;}\n" +
 				"		if (total < 0 && w.className == 'zul.wgt.Toolbarbutton') {\n" +
 				"			break;\n" +
 				"		}\n" +
 				"	}\n" +
 				"	if (w && total < 0) {\n" +
-				"       var event = new zk.Event(wgt, 'onOverflowButton', w.uuid, {toServer: true}); \n" +
+				"       let event = new zk.Event(wgt, 'onOverflowButton', w.uuid, {toServer: true}); \n" +
 				"       zAu.send(event); \n" +
 				"	}\n" +
 				"	else if (a) {\n" +
-				"       var event = new zk.Event(wgt, 'onOverflowButton', null, {toServer: true}); \n" +
+				"       let event = new zk.Event(wgt, 'onOverflowButton', null, {toServer: true}); \n" +
 				"       zAu.send(event); \n" +
 				"	}\n" +
 				"}");
@@ -1124,9 +1154,10 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
 					cnt++;
 			}
 			if (overflows.size() >= cnt) {
-				String script = "var e = jq('#" + getUuid() + "');";
-				script = script + "var b=zk.Widget.$('#" + overflowPopup.getUuid() + "'); ";
+				String script = "(function(){let e = jq('#" + getUuid() + "');";
+				script = script + "let b=zk.Widget.$('#" + overflowPopup.getUuid() + "'); ";
 				script = script + "b.setWidth(e.css('width'));";
+				script = script + "})()";
 				Clients.evalJavaScript(script);
 			} else {
 				overflowPopup.setWidth(null);
@@ -1189,7 +1220,8 @@ public class CustomADWindowToolbar extends FToolbar implements EventListener<Eve
 
 	public void onPostAfterSize() {
 		if (this.getPage() != null) {
-			String script = "var w = zk.Widget.$('#" + getUuid() + "'); w.toolbarScrollable(w);";
+			String script = "(function(){let w = zk.Widget.$('#" + getUuid() + "'); w.toolbarScrollable(w);";
+			script = script + "})()";
 			Clients.evalJavaScript(script);
 		}
 	}

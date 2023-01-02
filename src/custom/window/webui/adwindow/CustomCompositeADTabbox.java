@@ -32,7 +32,7 @@ import org.adempiere.webui.adwindow.IADTabpanel;
 import org.adempiere.webui.component.ADTabListModel;
 import org.adempiere.webui.component.ADTabListModel.ADTabLabel;
 import org.adempiere.webui.util.ZKUpdateUtil;
-import org.adempiere.webui.window.FDialog;
+import org.adempiere.webui.window.Dialog;
 import org.compiere.model.DataStatusEvent;
 import org.compiere.model.DataStatusListener;
 import org.compiere.model.GridField;
@@ -145,8 +145,8 @@ public class CustomCompositeADTabbox extends CustomAbstractADTabbox
 										if (!headerTab.isDetailVisible()) {
 											String uuid = headerTab.getCustomDetailPane().getParent().getUuid();
 											String vid = getSelectedDetailADTabpanel().getCustomGridView().getUuid();
-											String script = "setTimeout(function(){zk('#"+uuid+"').$().setOpen(true);setTimeout(function(){var v=zk('#" + vid
-													+ "').$();var e=new zk.Event(v,'onEditCurrentRow',null,{toServer:true});zAu.send(e);},200);},200)";
+											String script = "setTimeout(function(){zk('#"+uuid+"').$().setOpen(true);setTimeout(function(){let v=zk('#" + vid
+													+ "').$();let e=new zk.Event(v,'onEditCurrentRow',null,{toServer:true});zAu.send(e);},200);},200)";
 											Clients.response(new AuScript(script));
 										} else {
 											boolean isFormView = headerTab.getCustomDetailPane().getSelectedPanel().isToggleToFormView();
@@ -229,7 +229,7 @@ public class CustomCompositeADTabbox extends CustomAbstractADTabbox
 				}
 				else if (tabPanel != null && tabPanel.getGridTab().getRowCount() > 0
 					&& tabPanel.getGridTab().getCurrentRow() >= 0) {
-					FDialog.ask(tabPanel.getGridTab().getWindowNo(), null, "DeleteRecord?", new Callback<Boolean>() {
+					Dialog.ask(tabPanel.getGridTab().getWindowNo(), "DeleteRecord?", new Callback<Boolean>() {
 
 						@Override
 						public void onCallback(Boolean result) {
@@ -252,7 +252,7 @@ public class CustomCompositeADTabbox extends CustomAbstractADTabbox
 					StringBuilder sb = new StringBuilder();
 					sb.append(Env.getContext(Env.getCtx(), tabPanel.getGridTab().getWindowNo(), "_WinInfo_WindowName", false)).append(" - ")
 						.append(indices.length).append(" ").append(Msg.getMsg(Env.getCtx(), "Selected"));
-					FDialog.ask(sb.toString(), tabPanel.getGridTab().getWindowNo(), null,"DeleteSelection", new Callback<Boolean>() {
+					Dialog.ask(sb.toString(), tabPanel.getGridTab().getWindowNo(),"DeleteSelection", new Callback<Boolean>() {
 						@Override
 						public void onCallback(Boolean result) {
 							if(result){
@@ -392,6 +392,10 @@ public class CustomCompositeADTabbox extends CustomAbstractADTabbox
 				if (tabPanel != headerTab && headerTab.getCustomDetailPane() != null) {
 					if (b != null && b.booleanValue()) {
 						onActivateDetail(tabPanel);
+						if (headerTab instanceof CustomADTabpanel) {
+							if (!((CustomADTabpanel) headerTab).getADWindowContent().focusToLastFocusEditor(true))
+								((CustomADTabpanel) headerTab).getADWindowContent().focusToActivePanel();
+						}
 					}
 				}
 			}
@@ -1098,6 +1102,7 @@ public class CustomCompositeADTabbox extends CustomAbstractADTabbox
 					}
 					if (adtab.getGridTab().getCurrentRow() != currentRow)
 						adtab.getGridTab().setCurrentRow(currentRow, true);
+					Executions.schedule(getComponent().getDesktop(), e->((ADTabpanel)headerTab).focusToFirstEditor(), new Event("onFocusToHeaderTab"));
 					break;
 				}
 			}

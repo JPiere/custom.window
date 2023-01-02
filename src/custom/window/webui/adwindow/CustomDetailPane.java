@@ -50,7 +50,6 @@ import org.adempiere.webui.component.Window;
 import org.adempiere.webui.session.SessionManager;
 import org.adempiere.webui.theme.ThemeManager;
 import org.adempiere.webui.util.ZKUpdateUtil;
-import org.adempiere.webui.window.CustomizeGridViewDialog;
 import org.adempiere.webui.window.WRecordInfo;
 import org.compiere.model.DataStatusEvent;
 import org.compiere.model.GridTab;
@@ -572,10 +571,14 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 	 * @param e
 	 */
 	protected void onCustomize(Event e) {
-		if (getSelectedADTabpanel() instanceof ADTabpanel) {
-			ADTabpanel tabPanel = (ADTabpanel) getSelectedADTabpanel();
-			CustomizeGridViewDialog.onCustomize(tabPanel);
-		}
+//		if (getSelectedADTabpanel() instanceof ADTabpanel) {
+//			ADTabpanel tabPanel = (ADTabpanel) getSelectedADTabpanel();
+//			CustomizeGridViewDialog.onCustomize(tabPanel, b -> {
+//				ADWindow adwindow = ADWindow.findADWindow(DetailPane.this);
+//				if (adwindow != null)
+//					adwindow.getADWindowContent().focusToLastFocusEditor();
+//			});
+//		}
 	}
 
 	/**
@@ -1088,8 +1091,8 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 			if (!btn.isDisabled() && btn.isVisible()) {
 				Events.sendEvent(btn, new Event(Events.ON_CLICK, btn));
 				//client side script to close combobox popup
-				String script = "var w=zk.Widget.$('#" + btn.getUuid()+"'); " +
-						"zWatch.fire('onFloatUp', w);";
+				String script = "(function(){let w=zk.Widget.$('#" + btn.getUuid()+"'); " +
+						"zWatch.fire('onFloatUp', w);})()";
 				Clients.response(new AuScript(script));
 			}
 		}

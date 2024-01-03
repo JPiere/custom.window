@@ -23,9 +23,11 @@ import java.util.Set;
 
 import org.adempiere.base.IGridTabExporter;
 import org.adempiere.base.equinox.EquinoxExtensionLocator;
-import org.adempiere.exceptions.AdempiereException;
 import org.adempiere.webui.AdempiereWebUI;
 import org.adempiere.webui.LayoutUtils;
+//import org.adempiere.webui.adwindow.AbstractADWindowContent;	//JPIERE
+//import org.adempiere.webui.adwindow.IADTabbox;				//JPIERE
+//import org.adempiere.webui.adwindow.IADTabpanel;				//JPIERE
 import org.adempiere.webui.component.Checkbox;
 import org.adempiere.webui.component.Column;
 import org.adempiere.webui.component.Columns;
@@ -110,7 +112,7 @@ public class CustomExportAction implements EventListener<Event>
 		{
 			winExportFile = new Window();
 			winExportFile.setTitle(Msg.getMsg(Env.getCtx(), "Export") + ": " + panel.getActiveGridTab().getName());
-			ZKUpdateUtil.setWidth(winExportFile, "450px");
+			ZKUpdateUtil.setWindowWidthX(winExportFile, 450);
 			winExportFile.setClosable(true);
 			winExportFile.setBorder("normal");
 			winExportFile.setStyle("position:absolute");
@@ -170,6 +172,7 @@ public class CustomExportAction implements EventListener<Event>
 			LayoutUtils.addSclass("dialog-footer", confirmPanel);
 			vb.appendChild(confirmPanel);
 			confirmPanel.addActionListener(this);
+			winExportFile.addEventListener(Events.ON_CANCEL, e -> onCancel());
 		}
 		displayExportTabSelection();
 		panel.getComponent().getParent().appendChild(winExportFile);
@@ -177,6 +180,7 @@ public class CustomExportAction implements EventListener<Event>
 		LayoutUtils.openOverlappedWindow(panel.getComponent(), winExportFile, "middle_center");
 		winExportFile.addEventListener(DialogEvents.ON_WINDOW_CLOSE, this);
 		winExportFile.addEventListener("onExporterException", this);
+		winExportFile.focus();
 
 	}
 
@@ -219,6 +223,7 @@ public class CustomExportAction implements EventListener<Event>
 			chkSelectionTab.setAttribute("tabBinding", child);
 			vlayout.appendChild(chkSelectionTab);
 			chkSelectionTabForExport.add(chkSelectionTab);
+			chkSelectionTab.addEventListener(Events.ON_CHECK, this);
 			isHasSelectionTab = true;
 		}
 
@@ -231,19 +236,44 @@ public class CustomExportAction implements EventListener<Event>
 	@Override
 	public void onEvent(Event event) throws Exception {
 		if(event.getTarget().getId().equals(ConfirmPanel.A_CANCEL))
-			winExportFile.onClose();
+			onCancel();
 		else if(event.getTarget().getId().equals(ConfirmPanel.A_OK))
 			exportFile();
 		else if (event.getName().equals(DialogEvents.ON_WINDOW_CLOSE)) {
 			panel.hideBusyMask();
+			panel.focusToLastFocusEditor();
 		}else if (event.getTarget().equals(cboType) && event.getName().equals(Events.ON_SELECT)) {
 			displayExportTabSelection();
+		}else if (event.getTarget() instanceof Checkbox) {
+			// A child is not exportable without its parent
+			Checkbox cbSel = (Checkbox) event.getTarget();
+			GridTab gtSel = (GridTab)cbSel.getAttribute("tabBinding");
+			boolean found = false;
+			for (Checkbox cb : chkSelectionTabForExport) {
+				if (cb == cbSel) {
+					found = true;
+					continue;
+				}
+				GridTab gt = (GridTab)cb.getAttribute("tabBinding");
+				if (found) {
+					if (gt.getTabLevel() > gtSel.getTabLevel()) {
+						cb.setChecked(cbSel.isChecked());
+						cb.setEnabled(cbSel.isChecked());
+					} else {
+						break;
+					}
+				}
+			}
 		}else if (event.getName().equals("onExporterException")){
 			Dialog.error(0, "FileInvalidExtension");
 			winExportFile.onClose();
 		}
 	}
 
+	private void onCancel() {
+		winExportFile.onClose();
+	}
+	
 	/**
 	 * get info of window export,
 	 * index of active tab, list child tab
@@ -318,7 +348,7 @@ public class CustomExportAction implements EventListener<Event>
 			media = new AMedia(exporter.getSuggestedFileName(panel.getActiveGridTab()), null, exporter.getContentType(), file, true);
 			Filedownload.save(media);
 		} catch (Exception e) {
-			throw new AdempiereException(e);
+			Dialog.error(0, e.getLocalizedMessage());
 		} finally {
 			if (winExportFile != null)
 				winExportFile.onClose();

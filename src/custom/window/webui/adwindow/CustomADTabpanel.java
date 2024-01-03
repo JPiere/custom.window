@@ -14,6 +14,19 @@
  * Posterita Ltd., 3, Draper Avenue, Quatre Bornes, Mauritius                 *
  * or via info@posterita.org or http://www.posterita.org/                     *
  *****************************************************************************/
+/******************************************************************************
+ * Product: JPiere                                                            *
+ * Copyright (C) Hideaki Hagiwara (h.hagiwara@oss-erp.co.jp)                  *
+ *                                                                            *
+ * This program is free software, you can redistribute it and/or modify it    *
+ * under the terms version 2 of the GNU General Public License as published   *
+ * by the Free Software Foundation. This program is distributed in the hope   *
+ * that it will be useful, but WITHOUT ANY WARRANTY.                          *
+ * See the GNU General Public License for more details.                       *
+ *                                                                            *
+ * JPiere is maintained by OSS ERP Solutions Co., Ltd.                        *
+ * (http://www.oss-erp.co.jp)                                                 *
+ *****************************************************************************/
 
 package custom.window.webui.adwindow;
 
@@ -35,14 +48,14 @@ import org.adempiere.webui.AdempiereIdGenerator;
 import org.adempiere.webui.AdempiereWebUI;
 import org.adempiere.webui.ClientInfo;
 import org.adempiere.webui.LayoutUtils;
-import org.adempiere.webui.adwindow.ADTreePanel;
-import org.adempiere.webui.adwindow.ADWindowToolbar;
-import org.adempiere.webui.adwindow.AbstractADWindowContent;
-import org.adempiere.webui.adwindow.DetailPane;
-import org.adempiere.webui.adwindow.GridView;
-import org.adempiere.webui.adwindow.IADTabpanel;
-import org.adempiere.webui.adwindow.IFieldEditorContainer;
-import org.adempiere.webui.adwindow.ToolbarProcessButton;
+import org.adempiere.webui.adwindow.ADTreePanel;				//JPIERE
+import org.adempiere.webui.adwindow.ADWindowToolbar;			//JPIERE
+import org.adempiere.webui.adwindow.AbstractADWindowContent;	//JPIERE
+import org.adempiere.webui.adwindow.DetailPane;				//JPIERE
+import org.adempiere.webui.adwindow.GridView;					//JPIERE
+import org.adempiere.webui.adwindow.IADTabpanel;				//JPIERE
+import org.adempiere.webui.adwindow.IFieldEditorContainer;		//JPIERE
+import org.adempiere.webui.adwindow.ToolbarProcessButton;		//JPIERE
 import org.adempiere.webui.apps.CalloutDialog;
 import org.adempiere.webui.component.Borderlayout;
 import org.adempiere.webui.component.Column;
@@ -94,6 +107,7 @@ import org.compiere.model.MTree;
 import org.compiere.model.MTreeNode;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
+import org.compiere.model.SystemProperties;
 import org.compiere.model.X_AD_FieldGroup;
 import org.compiere.model.X_AD_ToolBarButton;
 import org.compiere.util.CCache;
@@ -125,10 +139,9 @@ import org.zkoss.zul.RowRenderer;
 import org.zkoss.zul.Separator;
 import org.zkoss.zul.South;
 import org.zkoss.zul.Space;
-import org.zkoss.zul.Style;
-import org.zkoss.zul.Toolbar;
 import org.zkoss.zul.Tabpanels;
 import org.zkoss.zul.Tabs;
+import org.zkoss.zul.Toolbar;
 import org.zkoss.zul.TreeModel;
 import org.zkoss.zul.Treeitem;
 import org.zkoss.zul.Vlayout;
@@ -136,21 +149,20 @@ import org.zkoss.zul.West;
 import org.zkoss.zul.impl.XulElement;
 
 /**
- *
- * This class is based on org.compiere.grid.GridController written by Jorg Janke.
- * Changes have been brought for UI compatibility.
- *
- * @author Jorg Janke
+ * UI for an AD_Tab content (AD_Tab + AD_Fields).
  *
  * @author <a href="mailto:agramdass@gmail.com">Ashley G Ramdass</a>
  * @date Feb 25, 2007
  * @version $Revision: 0.10 $
  *
  * @author Low Heng Sin
+ *
+ * @author Hideaki Hagiwara（h.hagiwara@oss-erp.co.jp）
  */
 public class CustomADTabpanel extends Div implements Evaluatee, EventListener<Event>,
 DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 {
+	//css for slide animation
 	private static final String SLIDE_LEFT_IN_CSS = "slide-left-in";
 
 	private static final String SLIDE_LEFT_OUT_CSS = "slide-left-out";
@@ -160,19 +172,26 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 	private static final String SLIDE_RIGHT_OUT_CSS = "slide-right-out";
 
 	/**
-	 *
+	 * generated serial id
 	 */
 	private static final long serialVersionUID = -6023888511495744589L;
 
+	/** event to save open/close state of detail pane as user preference for ad window **/
 	private static final String ON_SAVE_OPEN_PREFERENCE_EVENT = "onSaveOpenPreference";
 
+	/** post init event for tab panel **/
 	public static final String ON_POST_INIT_EVENT = "onPostInit";
 
+	/** event after tab panel had switch presentation between form and list view **/
 	public static final String ON_SWITCH_VIEW_EVENT = "onSwitchView";
 
+	/** Event after execution of {@link #dynamicDisplay(int)} **/
 	public static final String ON_DYNAMIC_DISPLAY_EVENT = "onDynamicDisplay";
+	
+	/** defer event to set selected tree node **/
 	private static final String ON_DEFER_SET_SELECTED_NODE = "onDeferSetSelectedNode";
 
+	/** ADTabpanel attribute to prevent ON_DEFER_SET_SELECTED_NODE event posted twice within 1 execution **/
 	private static final String ON_DEFER_SET_SELECTED_NODE_ATTR = "onDeferSetSelectedNode.Event.Posted";
 
 	private static final CLogger logger;
@@ -190,64 +209,90 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
     private int               windowNo;
 
+    /** form view for center of {@link #formContainer} **/
     private Grid              form;
 
+    /** field editors **/
     private ArrayList<WEditor> editors = new ArrayList<WEditor>();
 
+    /** components for field editors **/
     private ArrayList<Component> editorComps = new ArrayList<Component>();
 
+    /** editor toolbar buttons**/
     private ArrayList<WButtonEditor> toolbarButtonEditors = new ArrayList<WButtonEditor>();
 
+    /** toolbar buttons for AD_ToolBarButton **/
     private ArrayList<ToolbarProcessButton> toolbarProcessButtons = new ArrayList<ToolbarProcessButton>();
 
+    /** true if UI have been created for form and list **/
     private boolean			  uiCreated = false;
 
+	/** list view for center of {@link #formContainer} **/
     private CustomGridView		  listPanel;
 
+    /** content rows for group **/
     private Map<String, List<Row>> fieldGroupContents;
 
+    /** header row for group **/
     private Map<String, List<org.zkoss.zul.Row>> fieldGroupHeaders;
 
+    /** tabs for group (for tab type field group) **/
     private Map<String, List<Tab>> fieldGroupTabHeaders;
 
+    /** all rows for current group (regardless of field group type) **/
 	private ArrayList<Row> rowList;
 
-	List<Group> allCollapsibleGroups;
+	/** all collapsible groups **/
+	protected List<Group> allCollapsibleGroups;
 
+	/** main layout for header (center), tree (west) and detail pane (south) **/
 	private Borderlayout formContainer = null;
 
+	/** Tree panel for west of {@link #formContainer} **/
 	private CustomADTreePanel treePanel = null;
 
+	/** Sync field editor changes to GridField **/
 	private GridTabDataBinder dataBinder;
 
+	/** true if tab have been activated **/
 	protected boolean activated = false;
 
+	/**
+	 * current group for collapsible type field group 
+	 */
 	private Group currentGroup;
 
+	/** Panel for child tabs, south of {@link #formContainer} **/
 	private CustomDetailPane detailPane;
 
+	/** true if this ADTabpanel instance is own by detail pane **/
 	private boolean detailPaneMode;
 
+	/** tab no within an AD Window (sequence start from 0) **/
 	private int tabNo;
 
-	/** DefaultFocusField		*/
+	/** Default focus field		*/
 	private WEditor	defaultFocusField = null;
 
+	/** number of columns for {@link #form} **/
 	private int numberOfFormColumns;
 
+	/** event to toggle between form and list view **/
 	public static final String ON_TOGGLE_EVENT = "onToggle";
 
+	/** default width for west tree panel **/
 	private static final String DEFAULT_PANEL_WIDTH = "300px";
 
 	private static CCache<Integer, Boolean> quickFormCache = new CCache<Integer, Boolean>(null, "QuickForm", 20, false);
 
-	/** Tab Box for Tab Field Groups */
+	/** Tab Box for Tab Type Field Groups */
 	private Tabbox tabbox = new Tabbox();
-	/** List of Tab Group Grids */
-	private List<Grid> tabForms;
-	/** Current Tab Group Rows */
-	private Rows currentTabRows;
+	/** List of Grid/Form for tab type field group */
+	private List<Grid> tabGroupForms;
+	/** Current Rows for tab type field group */
+	private Rows currentTabGroupRows;
 
+	/** Event for south of {@link #formContainer} **/
 	private static enum SouthEvent {
     	SLIDE(),
     	OPEN(),
@@ -256,11 +301,17 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 		private SouthEvent() {}
     }
 
+	/**
+	 * default constructor
+	 */
 	public CustomADTabpanel()
 	{
         init();
     }
 
+	/**
+	 * init components and event listeners
+	 */
     private void init()
     {
         initComponents();
@@ -279,6 +330,9 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
         	ClientInfo.onClientInfo(this, this::onClientInfo);
     }
 
+    /**
+     * Create new {@link #form} and {@link #listPanel} instance.
+     */
     private void initComponents()
     {
     	LayoutUtils.addSclass("adtab-content", this);
@@ -291,6 +345,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
         form.setVflex(false);
         form.setSclass("grid-layout adwindow-form");
         form.setWidgetAttribute(AdempiereWebUI.WIDGET_INSTANCE_NAME, "form");
+        //swipe listener for mobile
         if (ClientInfo.isMobile())
         {
 	        form.addEventListener("onSwipeRight", e -> {
@@ -322,6 +377,10 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
         	listPanel.getListbox().addEventListener(Events.ON_DOUBLE_CLICK, this);
     }
 
+    /**
+     * Setup client side form swipe listener for mobile.
+     * Send onSwipeRight and onSwipeLeft event to server.
+     */
 	private void setupFormSwipeListener() {
 		String uuid = form.getUuid();
 		StringBuilder script = new StringBuilder("(function(){let w=zk.Widget.$('")
@@ -384,7 +443,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 					ZKUpdateUtil.setHeight(formContainer.getSouth(), height);
 				}
 			} catch (Exception e) {
-				// just ignore exception is harmless here, consequence is just not setting height so it will assume the default of theme
+				// just ignore, exception is harmless here, consequence is just not setting height so it will assume the default of theme
 			}
 		}
     }
@@ -395,7 +454,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     }
 
     /**
-     *
+     * init tab panel layout ({@link #formContainer} and listeners
      * @param winPanel
      * @param gridTab
      */
@@ -412,22 +471,13 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
         this.getChildren().clear();
 
-        setId(AdempiereIdGenerator.escapeId(gridTab.getName()));
+		if (SystemProperties.isZkUnitTest())
+        	setId(AdempiereIdGenerator.escapeId(gridTab.getName()));
 
         int AD_Tree_ID = 0;
 		if (gridTab.isTreeTab())
 			AD_Tree_ID = MTree.getDefaultAD_Tree_ID (
 				Env.getAD_Client_ID(Env.getCtx()), gridTab.getKeyColumnName());
-
-		StringBuilder cssContent = new StringBuilder();
-		cssContent.append(".adtab-form-borderlayout .z-south-collapsed:before { ");
-		cssContent.append("content: \"");
-		cssContent.append(Util.cleanAmp(Msg.getMsg(Env.getCtx(), "Detail")));
-		cssContent.append("\"; ");
-		cssContent.append("} ");
-		Style style = new Style();
-		style.setContent(cssContent.toString());
-		appendChild(style);
 
 		if (gridTab.isTreeTab() && AD_Tree_ID != 0)
 		{
@@ -506,7 +556,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     }
 
 	/**
-     * Create UI components if not already created
+     * Create UI for AD_Fields
      */
     @Override
     public void createUI()
@@ -514,6 +564,10 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     	createUI(false);
     }
 
+    /**
+     * Create UI for AD_Fields
+     * @param update true if it is update instead of create new
+     */
     protected void createUI(boolean update)
     {
     	if (update)
@@ -530,7 +584,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     	fieldGroupHeaders = new HashMap<String, List<org.zkoss.zul.Row>>();
     	allCollapsibleGroups = new ArrayList<Group>();
 
-    	tabForms = new ArrayList<Grid>();
+    	tabGroupForms = new ArrayList<Grid>();
     	fieldGroupTabHeaders = new HashMap<String, List<Tab>>();
     	
     	int numCols=gridTab.getNumColumns();
@@ -619,14 +673,15 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
         	// field group
         	String fieldGroup = field.getFieldGroup();
-        	if (!Util.isEmpty(fieldGroup) && !fieldGroup.equals(currentFieldGroup)) // group changed
+        	if (!Util.isEmpty(fieldGroup) && !fieldGroup.equals(currentFieldGroup)
+        		&& !X_AD_FieldGroup.FIELDGROUPTYPE_DoNothing.equals(field.getFieldGroupType())) // group changed
         	{
         		currentFieldGroup = fieldGroup;
 
         		if (numCols - actualxpos + 1 > 0)
         			row.appendCellChild(createSpacer(), numCols - actualxpos + 1);
-        		if(currentTabRows != null) {
-        			currentTabRows.appendChild(row);
+        		if (currentTabGroupRows != null) {
+        			currentTabGroupRows.appendChild(row);
         		} else {
         			row.setGroup(currentGroup);
         			rows.appendChild(row);
@@ -656,7 +711,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
         			rows.appendChild(row);
         			headerRows.add(row);
         			currentGroup = null;
-        			currentTabRows = null;
+        			currentTabGroupRows = null;
         		} else if(X_AD_FieldGroup.FIELDGROUPTYPE_Tab.equals(field.getFieldGroupType())) {
         			// Create New Tab for FieldGroup
             		List<Tab> headerTabs = new ArrayList<Tab>();
@@ -673,7 +728,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     				headerTabs.add(tab);
     				
     				Grid tabForm = new Grid();
-    				tabForms.add(tabForm);
+    				tabGroupForms.add(tabForm);
     				ZKUpdateUtil.setHflex(tabForm, "1");
     			    ZKUpdateUtil.setHeight(tabForm, null);
     			    tabForm.setVflex(false);
@@ -711,7 +766,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     				tp.appendChild(tabForm);
 
     				currentGroup = null;
-    				currentTabRows = tabRows;
+    				currentTabGroupRows = tabRows;
         		}
         		else
         		{
@@ -719,14 +774,13 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
         			Cell cell = (Cell) rowg.getFirstChild();
         			cell.setSclass("z-group-inner");
         			cell.setColspan(numCols+1);
-//        			rowg.appendChild(cell);
 
     				allCollapsibleGroups.add(rowg);
         			if (X_AD_FieldGroup.FIELDGROUPTYPE_Tab.equals(field.getFieldGroupType()) || field.getIsCollapsedByDefault())
         			{
         				rowg.setOpen(false);
         			}
-        			currentTabRows = null;
+        			currentTabGroupRows = null;
         			currentGroup = rowg;
         			rows.appendChild(rowg);
         			headerRows.add(rowg);
@@ -754,8 +808,8 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
         		if (numCols - actualxpos + 1 > 0)
         			row.appendCellChild(createSpacer(), numCols - actualxpos + 1);
         		// Tab Group vs Grid Group
-        		if(currentTabRows != null) {
-        			currentTabRows.appendChild(row);
+        		if (currentTabGroupRows != null) {
+        			currentTabGroupRows.appendChild(row);
         		} else {
         			row.setGroup(currentGroup);
         			rows.appendChild(row);
@@ -915,8 +969,8 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 		if (numCols - actualxpos + 1 > 0)
 			row.appendCellChild(createSpacer(), numCols - actualxpos + 1);
 		// Tab Group vs Grid Group
-		if(currentTabRows != null) {
-			currentTabRows.appendChild(row);
+		if (currentTabGroupRows != null) {
+			currentTabGroupRows.appendChild(row);
 		} else {
 			row.setGroup(currentGroup);
 			rows.appendChild(row);
@@ -952,6 +1006,10 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
         	switchRowPresentation();
     }
 
+    /**
+     * @param field
+     * @return {@link WEditor} or null if not found
+     */
 	private WEditor findEditor(GridField field) {
 		for(WEditor editor : editors) {
 			if (editor.getGridField() == field)
@@ -960,6 +1018,9 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 		return null;
 	}
 
+	/**
+	 * load toolbar buttons from AD_ToolBarButton
+	 */
 	private void loadToolbarButtons() {
 		//get extra toolbar process buttons
         MToolBarButton[] mToolbarButtons = MToolBarButton.getProcessButtonOfTab(gridTab.getAD_Tab_ID(), null);
@@ -992,7 +1053,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 	}
 
 	/**
-	 * Validate display properties of fields of current row.
+	 * Update state of fields (visibility, style, writable, etc)
 	 * @param col
 	 */
 	@Override
@@ -1003,6 +1064,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
             return;
         }
 
+        //css animation for slide
         if (form.getSclass() != null && form.getSclass().contains(SLIDE_RIGHT_OUT_CSS)) {
         	Executions.schedule(getDesktop(), e -> {
         		LayoutUtils.removeSclass(SLIDE_RIGHT_OUT_CSS, form);
@@ -1120,7 +1182,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
         }
 
         //hide row if all editor within the row is invisible in Tabbox grid
-        for(Grid tabForm: tabForms) {
+        for(Grid tabForm: tabGroupForms) {
             List<Component> tabrows = tabForm.getRows().getChildren();
             for (Component comp : tabrows)
             {
@@ -1233,6 +1295,9 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 		LayoutUtils.removeSclass(SLIDE_RIGHT_IN_CSS, form);
 	}
 
+	/**
+	 * echo set selected node event for tree
+	 */
 	private void echoDeferSetSelectedNodeEvent() {
 		if (getAttribute(ON_DEFER_SET_SELECTED_NODE_ATTR) == null) {
         	setAttribute(ON_DEFER_SET_SELECTED_NODE_ATTR, Boolean.TRUE);
@@ -1241,7 +1306,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 	}
 
     /**
-     * @return String
+     * @return display logic
      */
     @Override
     public String getDisplayLogic()
@@ -1250,7 +1315,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     }
 
     /**
-     * @return String
+     * @return title of tab
      */
     @Override
     public String getTitle()
@@ -1260,6 +1325,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
     /**
      * @param variableName
+     * @return value
      */
     @Override
     public String get_ValueAsString(String variableName)
@@ -1286,7 +1352,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     }
 
     /**
-     * @return The record ID of this Tabpanel
+     * @return The record ID of current row
      */
     @Override
     public int getRecord_ID()
@@ -1296,7 +1362,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
     /**
      * Is panel need refresh
-     * @return boolean
+     * @return true if GridTab need refresh
      */
     @Override
     public boolean isCurrent()
@@ -1314,7 +1380,8 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     }
 
     /**
-     * Retrieve from db
+     * Retrieve from db.
+     * Delegate to {@link GridTab#query(boolean)}
      */
     @Override
     public void query()
@@ -1327,9 +1394,9 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
     /**
      * Retrieve from db
-     * @param onlyCurrentRows
-     * @param onlyCurrentDays
-     * @param maxRows
+     * @param onlyCurrentRows True to show only unprocessed or the one updated within x days (default is 1 day before today)
+     * @param onlyCurrentDays if > 0, filter records with created >= current_date - onlyCurrentDays
+     * @param maxRows if > 0, maximum number of rows to load
      */
     @Override
     public void query (boolean onlyCurrentRows, int onlyCurrentDays, int maxRows)
@@ -1355,7 +1422,8 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     }
 
     /**
-     * reset detail data grid for new parent record that's not saved yet
+     * Reset detail data grid for new parent record that's not saved yet.
+     * Delegate to {@link GridTab#resetDetailForNewParentRecord()}.
      */
     @Override
 	public void resetDetailForNewParentRecord ()
@@ -1380,7 +1448,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     }
 
     /**
-     * @return TreePanel
+     * @return ADTreePanel
      */
     public CustomADTreePanel getCustomTreePanel()
     {
@@ -1388,7 +1456,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     }
 
     /**
-     * @return TreePanel
+     * @return master, detail or both
      */
     public String getTreeDisplayedOn()
     {
@@ -1398,6 +1466,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     /**
      * Refresh current row
      */
+    @Override
     public void refresh()
     {
         gridTab.dataRefresh();
@@ -1407,6 +1476,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
      * Activate/deactivate panel
      * @param activate
      */
+    @Override
     public void activate(boolean activate)
     {
     	if (activate) {
@@ -1448,7 +1518,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     }
 
     /**
-     *
+     * Delegate to {@link #focusToEditor(WEditor, boolean)}
      * @param checkCurrent
      */
     public void focusToFirstEditor(boolean checkCurrent) {
@@ -1479,6 +1549,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
      * @see EventListener#onEvent(Event)
      */
     @SuppressWarnings("unchecked")
+    @Override
 	public void onEvent(Event event)
     {
     	if (event.getTarget() == listPanel.getListbox())
@@ -1528,7 +1599,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     			if (preference == null || preference.getAD_Preference_ID() <= 0) {
     				preference = new MPreference(Env.getCtx(), 0, null);
     				preference.setAD_Window_ID(windowId);
-    				preference.setAD_User_ID(userId); // allow System
+    				preference.setAD_User_ID(userId);
     				preference.setAttribute(adTabId+"|DetailPane.IsOpen");
     			}
 				preference.setValue(value ? "Y" : "N");
@@ -1548,6 +1619,10 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 		}
 	}
 
+	/**
+	 * handle open/close event of south panel (detail pane)
+	 * @param event
+	 */
     private void onSouthEvent(SouthEvent event) {
     	if (event == SouthEvent.OPEN || event == SouthEvent.CLOSE) {
     		boolean open = event == SouthEvent.OPEN ? true : false;
@@ -1576,6 +1651,9 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     	}
     }
 
+    /**
+     * @return true if detail pane is open/visible
+     */
     private boolean isOpenDetailPane() {
     	if (isMobile())
     		return false;
@@ -1591,6 +1669,9 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     	return open;
     }
 
+    /**
+     * @return height of detail pane from user preference
+     */
     private String heigthDetailPane() {
     	String height = null;
     	int windowId = getGridTab().getAD_Window_ID();
@@ -1601,6 +1682,9 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     	return height;
     }
 
+    /**
+     * @return width of tree panel from user preference (or default if no user preference)
+     */
     private String widthTreePanel() {
     	String width = null;
     	int windowId = getGridTab().getAD_Window_ID();
@@ -1610,13 +1694,14 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     	return Util.isEmpty(width) ? DEFAULT_PANEL_WIDTH : width;
     }
 
+    /**
+     * Navigate to a tree node
+     * @param value
+     */
     private void navigateTo(DefaultTreeNode<MTreeNode> value) {
     	MTreeNode treeNode = value.getData();
     	//  We Have a TreeNode
 		int nodeID = treeNode.getNode_ID();
-		//  root of tree selected - ignore
-		//if (nodeID == 0)
-			//return;
 
 		//  Search all rows for mode id
 		int size = gridTab.getRowCount();
@@ -1647,6 +1732,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
      * @param e
      * @see DataStatusListener#dataStatusChanged(DataStatusEvent)
      */
+    @Override
 	public void dataStatusChanged(DataStatusEvent e)
     {
     	//ignore background event
@@ -1669,7 +1755,8 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
                 Dialog.error(windowNo, msg);
             }
         }
-        //if (col >= 0)
+        
+        //update UI state
         if (!uiCreated)
         	createUI();
         dynamicDisplay(col);
@@ -1765,6 +1852,8 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     			treePanel.initTree(AD_Tree_ID, windowNo);
     		}
         }
+        
+        //update list view
         if (listPanel.isVisible()) {
         	listPanel.updateListIndex();
         	listPanel.dynamicDisplay(col);
@@ -1775,6 +1864,10 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
         }
     }
 
+    /**
+     * delete tree node by recordId
+     * @param recordId
+     */
     private void deleteNode(int recordId) {
 		if (recordId <= 0) return;
 
@@ -1795,6 +1888,9 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 		}
 	}
 
+    /**
+     * add new tree node for current row
+     */
 	private void addNewNode() {
     	if (gridTab.getRecord_ID() > 0) {
 	    	String name = (String)gridTab.getValue("Name");
@@ -1832,6 +1928,10 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     	}
 	}
 
+	/**
+	 * set selected tree node by recordId
+	 * @param recordId
+	 */
 	private void setSelectedNode(int recordId) {
 		if (recordId <= 0) return;
 
@@ -1936,15 +2036,15 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
 	static class ZoomListener implements EventListener<Event> {
 
-		private IZoomableEditor searchEditor;
+		private IZoomableEditor zoomableEditor;
 
 		ZoomListener(IZoomableEditor editor) {
-			searchEditor = editor;
+			zoomableEditor = editor;
 		}
 
 		public void onEvent(Event event) throws Exception {
 			if (Events.ON_CLICK.equals(event.getName())) {
-				searchEditor.actionZoom();
+				zoomableEditor.actionZoom();
 			}
 
 		}
@@ -1954,6 +2054,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 	/**
 	 * @see IADTabpanel#afterSave(boolean)
 	 */
+	@Override
 	public void afterSave(boolean onSaveEvent) {
 	}
 
@@ -1985,6 +2086,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 	/**
 	 * @see IADTabpanel#onEnterKey()
 	 */
+	@Override
 	public boolean onEnterKey() {
 		if (listPanel.isVisible()) {
 			return listPanel.onEnterKey();
@@ -1993,15 +2095,16 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 	}
 
 	/**
-	 * @return boolean
+	 * @return true if list/grid view is visible
 	 */
+	@Override
 	public boolean isGridView() {
 		return listPanel.isVisible();
 	}
 
 	/**
 	 *
-	 * @return GridPanel
+	 * @return {@link GridView}
 	 */
 	@Override
 	public CustomGridView getCustomGridView() {
@@ -2027,27 +2130,38 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 		}
 	}
 
+	/**
+	 * Show detail pane
+	 */
 	private void attachDetailPane() {
 		if (formContainer.getSouth() != null) {
 			formContainer.getSouth().setVisible(true);
-			if (formContainer.getSouth().isOpen() && detailPane != null && detailPane.getParent() == null) {
-				formContainer.appendSouth(detailPane);
-			}
-		}
-	}
-
-	private void detachDetailPane() {
-		if (formContainer.getSouth() != null) {
-			formContainer.getSouth().setVisible(false);
-			if (detailPane != null && detailPane.getParent() != null) {
-				detailPane.detach();
+			if (formContainer.getSouth().isOpen()) {
+				if (detailPane != null) {
+					if (detailPane.getParent() != formContainer.getSouth())
+						formContainer.appendSouth(detailPane);
+					else
+						detailPane.setVisible(true);
+				}
 			}
 		}
 	}
 
 	/**
-	 * Get all visible button editors
-	 * @return List<WButtonEditor>
+	 * Hide detail pane
+	 */
+	private void detachDetailPane() {
+		if (formContainer.getSouth() != null) {
+			formContainer.getSouth().setVisible(false);
+			if (detailPane != null && detailPane.getParent() != null) {
+				detailPane.setVisible(false);
+			}
+		}
+	}
+
+	/**
+	 * Get all visible toolbar button editors
+	 * @return List<Button>
 	 */
 	public List<Button> getToolbarButtons() {
 		List<Button> buttonList = new ArrayList<Button>();
@@ -2092,7 +2206,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 	}
 
 	/**
-	 * activate current selected detail tab if it is visible
+	 * activate selected detail tab if it is visible
 	 */
 	public void activateDetailIfVisible() {
 		if (isDetailVisible()) {
@@ -2117,7 +2231,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
 	/**
 	 *
-	 * @return true if the detailpane is visible
+	 * @return true if {@link DetailPane} is visible
 	 */
 	@Override
 	public boolean isDetailVisible() {
@@ -2131,7 +2245,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
 	/**
 	 *
-	 * @return true if have one or more detail tabs
+	 * @return true if selected tab has one or more detail/child tab
 	 */
 	public boolean hasDetailTabs() {
 		if (formContainer.getSouth() == null || !formContainer.getSouth().isVisible()) {
@@ -2166,6 +2280,11 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 		}
 	}
 
+	/**
+	 * 
+	 * @param toFocus
+	 * @param checkCurrent true to check if form currently has focus (using zk.currentFocus)
+	 */
 	protected void focusToEditor(WEditor toFocus, boolean checkCurrent) {
 		Component c = toFocus.getComponent();
 		if (c instanceof EditorBox) {
@@ -2198,6 +2317,9 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 		}
 	}
 
+	/**
+	 * @return true if tree is order by value
+	 */
 	private boolean isTreeDrivenByValue() {
 		SimpleTreeModel model = (SimpleTreeModel)(TreeModel<?>) treePanel.getTree().getModel();
 		boolean retValue = false;
@@ -2205,6 +2327,9 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 		return retValue;
 	}
 
+	/**
+	 * @return true if value is shown in tree
+	 */
 	private boolean isValueDisplayed() {
 		SimpleTreeModel model = (SimpleTreeModel)(TreeModel<?>) treePanel.getTree().getModel();
 		boolean retValue = false;
@@ -2228,10 +2353,18 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 					savePreference("TreePanel.Width", width);
 			}
 		}
+		for(WEditor editor : editors) {
+			editor.getComponent().setWidgetListener("onFocus", null);
+		}
 		super.onPageDetached(page);
 	}
 
-	void savePreference(String attribute, String value)
+	/**
+	 * Save user preference for this AD Window
+	 * @param attribute
+	 * @param value
+	 */
+	protected void savePreference(String attribute, String value)
 	{
 		int windowId = getGridTab().getAD_Window_ID();
 		int adTabId = getGridTab().getAD_Tab_ID();
@@ -2256,6 +2389,9 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 		}
 	}
 
+	/**
+	 * handle client info event
+	 */
 	protected void onClientInfo() {
 		if (!uiCreated || gridTab == null) return;
 		int numCols=gridTab.getNumColumns();
@@ -2278,6 +2414,9 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 		}
 	};
 
+	/**
+	 * @return true if client is mobile
+	 */
 	protected boolean isMobile() {
 		return ClientInfo.isMobile();
 	}
@@ -2314,7 +2453,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 	}
 	
 	/**
-	 * Set Visibility for Tabbox based on Children and Form Visibility
+	 * Set Visibility for {@link #tabbox} based on {@link #form} Visibility and whether {@link #tabbox} is empty
 	 */
 	private void setGroupTabboxVisibility() {
 		boolean isGroupTabVisible = false;
@@ -2342,6 +2481,10 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
 	}
 
+	/**
+	 * 
+	 * @return {@link AbstractADWindowContenta}
+	 */
 	public CustomAbstractADWindowContent getADWindowContent()
 	{
 		return windowPanel;

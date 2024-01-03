@@ -20,14 +20,15 @@ import java.util.Map;
 
 import org.adempiere.util.GridRowCtx;
 import org.adempiere.webui.LayoutUtils;
-import org.adempiere.webui.adwindow.ADWindow;
-import org.adempiere.webui.adwindow.AbstractADWindowContent;
-import org.adempiere.webui.adwindow.DetailPane;
-import org.adempiere.webui.adwindow.GridTableListModel;
-import org.adempiere.webui.adwindow.QuickGridView;
+import org.adempiere.webui.adwindow.ADWindow;					//JPIERE
+import org.adempiere.webui.adwindow.AbstractADWindowContent;	//JPIERE
+import org.adempiere.webui.adwindow.DetailPane;				//JPIERE
+import org.adempiere.webui.adwindow.GridTableListModel;		//JPIERE
+import org.adempiere.webui.adwindow.QuickGridView;				//JPIERE
 import org.adempiere.webui.component.Button;
 import org.adempiere.webui.component.Checkbox;
 import org.adempiere.webui.component.Combinationbox;
+import org.adempiere.webui.component.ComboEditorBox;
 import org.adempiere.webui.component.Combobox;
 import org.adempiere.webui.component.Datebox;
 import org.adempiere.webui.component.DatetimeBox;
@@ -76,7 +77,7 @@ import org.zkoss.zul.RowRendererExt;
 import org.zkoss.zul.Timebox;
 
 /**
- * Row renderer for Quick GridTab grid.
+ * Row renderer for Quick GridTab grid (Base on {@link GridTabRowRenderer})
  *
  * @author Logilite Technologies
  * @since Nov 03, 2017
@@ -84,7 +85,9 @@ import org.zkoss.zul.Timebox;
 public class CustomQuickGridTabRowRenderer
 		implements RowRenderer<Object[]>, RowRendererExt, RendererCtrl, EventListener<Event> {
 
+	/** Component boolean attribute to indicate this component is own by QuickGridView **/
 	public static final String	IS_QUICK_FORM_COMPONENT	= "IS_QUICK_FORM_COMPONENT";
+	/** Editor component attribute to store row index (absolute) **/
 	public static final String GRID_ROW_INDEX_ATTR = "grid.row.index";
 	private static final String CELL_DIV_STYLE = "height: 100%; cursor: pointer; ";
 	private static final String CELL_DIV_STYLE_ALIGN_CENTER = CELL_DIV_STYLE + "text-align:center; ";
@@ -95,18 +98,27 @@ public class CustomQuickGridTabRowRenderer
 
 	private GridTab gridTab;
 	private int windowNo;
+	/** Sync field editor changes to GridField **/
 	private GridTabDataBinder dataBinder;
 	private Paging paging;
 
+	/** internal listener for row event **/
 	private RowListener rowListener;
 
+	/** Grid that own this renderer **/
 	private Grid grid = null;
+	/** QuickGridView that uses this renderer **/
 	private CustomQuickGridView gridPanel = null;
+	/** current focus row **/
 	private Row currentRow;
+	/** values of current row. updated in {@link #render(Row, Object[], int)}. **/
 	private Object[] currentValues;
+	/** true if currrent row is in edit mode **/
 	private boolean editing = false;
 	public int currentRowIndex = -1;
+	/** AD window content part that own this renderer **/
 	private CustomAbstractADWindowContent m_windowPanel;
+	/** internal listener for button ActionEvent **/
 	private ActionListener buttonListener;
 	// Row-wise Editors Map
 	public Map<Row, ArrayList<WEditor>>	editorsListMap					= new LinkedHashMap<Row, ArrayList<WEditor>>();
@@ -133,6 +145,12 @@ public class CustomQuickGridTabRowRenderer
 		this.dataBinder = new GridTabDataBinder(gridTab);
 	}
 
+	/**
+	 * Get editor for GridField and set value to object parameter.
+	 * @param gridField
+	 * @param object
+	 * @return {@link WEditor}
+	 */
 	private WEditor getEditorCell(GridField gridField, Object object) {
 		WEditor editor = WebEditorFactory.getEditor(gridField, true);
 		if (editor != null) {
@@ -142,6 +160,11 @@ public class CustomQuickGridTabRowRenderer
 		return editor;
 	}
 
+	/**
+	 * Setup field editor
+	 * @param gridField
+	 * @param editor
+	 */
 	private void prepareFieldEditor(GridField gridField, WEditor editor) {
 			if (editor instanceof WButtonEditor)
             {
@@ -166,6 +189,10 @@ public class CustomQuickGridTabRowRenderer
 		}
 	}
 
+	/**
+	 * @param field
+	 * @return column index for field, -1 if not found
+	 */
 	public int getColumnIndex(GridField field) {
 		GridField[] fields = gridPanel.getFields();
 		for(int i = 0; i < fields.length; i++) {
@@ -183,6 +210,7 @@ public class CustomQuickGridTabRowRenderer
 	}
 
 	/**
+	 * Render data for row.
 	 * @param row
 	 * @param data
 	 * @param index
@@ -414,7 +442,7 @@ public class CustomQuickGridTabRowRenderer
 	 *
 	 * @param component
 	 * @param isDisable
-	 * @return
+	 * @return true if component is read only
 	 */
 	public boolean isDisableReadonlyComponent(Component component, boolean isDisable)
 	{
@@ -553,7 +581,7 @@ public class CustomQuickGridTabRowRenderer
 	 *
 	 * @param zclass
 	 * @param isDisable
-	 * @return
+	 * @return modify zclass
 	 */
 	private String addOrRemoveCssClass(String zclass, boolean isDisable)
 	{
@@ -573,14 +601,27 @@ public class CustomQuickGridTabRowRenderer
 
 	private Cell currentCell = null;
 
+	/**
+	 * @return current {@link Cell}
+	 */
 	public Cell getCurrentCell() {
 		return currentCell;
 	}
 
+	/**
+	 * Set current cell
+	 * @param currentCell
+	 */
 	public void setCurrentCell(Cell currentCell) {
 		this.currentCell = currentCell;
 	}
 
+	/**
+	 * Set current cell
+	 * @param row
+	 * @param col
+	 * @param code cell navigation code (right, left, down, up, next)
+	 */
 	public void setCurrentCell(int row, int col, int code) {
 		if (col < 0 || row < 0)
 			return;
@@ -665,7 +706,7 @@ public class CustomQuickGridTabRowRenderer
 	}
 
 	/**
-	 * Set Property change listener of editor field
+	 * Add property change listener (WEditor) to GridField
 	 *
 	 * @param editorsList
 	 */
@@ -681,7 +722,7 @@ public class CustomQuickGridTabRowRenderer
 	}
 
 	/**
-	 * Remove Property change listener of editor field
+	 * Remove property change listener (WEditor) from GridField
 	 *
 	 * @param editorsList
 	 */
@@ -696,7 +737,7 @@ public class CustomQuickGridTabRowRenderer
 	}
 
 	/**
-	 * If true add Property Change Listener, a false Remove Property Change Listener
+	 * If isAddListener is true add Property Change Listener, otherwise Remove Property Change Listener
 	 *
 	 * @param isAddListener
 	 * @param col
@@ -719,8 +760,8 @@ public class CustomQuickGridTabRowRenderer
 	} // addRemovePropertyChangeListener
 
 	/**
-	 * @param code
-	 * @return
+	 * @param code cell navigation code
+	 * @return true to add property change listener, false otherwise
 	 */
 	public Boolean isAddRemoveListener(int code)
 	{
@@ -731,7 +772,8 @@ public class CustomQuickGridTabRowRenderer
 	} // isAddRemoveListener
 
 	/**
-	 * @param row
+	 * Set current row
+	 * @param row absolute row index
 	 */
 	public void setRowTo(int row)
 	{
@@ -741,6 +783,11 @@ public class CustomQuickGridTabRowRenderer
 		setCurrentRow(currentRow);
 	}
 
+	/**
+	 * @param row
+	 * @param col
+	 * @return true if cell is editable, false otherwise
+	 */
 	private boolean isEditable(int row, int col)
 	{
 		Cell cell = null;
@@ -791,10 +838,15 @@ public class CustomQuickGridTabRowRenderer
 			return true;
 		else if (component instanceof PAttributebox && !((PAttributebox) component).getTextbox().isReadonly() && (((PAttributebox) component).isEnabled() && ((PAttributebox) component).isVisible()))
 			return true;
+		else if (component instanceof ComboEditorBox && !((ComboEditorBox) component).getCombobox().isReadonly() && (((ComboEditorBox) component).isEnabled() && ((ComboEditorBox) component).isVisible()))
+			return true;
 		else
 			return false;
 	}
 
+	/**
+	 * Set focus to {@link #currentCell}
+	 */
 	public void setFocusOnCurrentCell() {
 		if (currentCell == null || currentCell.getChildren().size() <= 0) {
 			return;
@@ -850,6 +902,7 @@ public class CustomQuickGridTabRowRenderer
 	} // setFocusOnCurrentCell
 
 	/**
+	 * Set current focus row
 	 * @param row
 	 */
 	public void setCurrentRow(Row row)
@@ -881,7 +934,7 @@ public class CustomQuickGridTabRowRenderer
 	}
 
 	/**
-	 * Enter edit mode
+	 * Enter edit mode for current focus row.
 	 */
 	public void editCurrentRow() {
 		if (currentRow != null && currentRow.getParent() != null && currentRow.isVisible() && grid != null
@@ -934,13 +987,16 @@ public class CustomQuickGridTabRowRenderer
 	}
 
 	/**
-	 *
+	 * Set {@link CustomQuickGridView} that own this renderer.
 	 * @param gridPanel
 	 */
 	public void setGridPanel(CustomQuickGridView gridPanel) {
 		this.gridPanel = gridPanel;
 	}
 
+	/**
+	 * Internal listener for row event (ON_CLICK, ON_DOUBLE_CLICK and ON_OK).
+	 */
 	static class RowListener implements EventListener<Event> {
 
 		private Grid _grid;
@@ -969,13 +1025,15 @@ public class CustomQuickGridTabRowRenderer
 	}
 
 	/**
-	 * @return boolean
+	 * @return true if current row is in edit mode, false otherwise
 	 */
 	public boolean isEditing() {
 		return editing;
 	}
 
 	/**
+	 * Set AD window content part that own this renderer.
+	 * {@link #buttonListener} need this to call {@link AbstractADWindowContent#actionPerformed(ActionEvent)}.
 	 * @param windowPanel
 	 */
 	public void setADWindowPanel(CustomAbstractADWindowContent windowPanel) {

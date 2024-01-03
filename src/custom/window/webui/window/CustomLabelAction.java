@@ -27,8 +27,12 @@
 package custom.window.webui.window;
 
 import org.adempiere.webui.LayoutUtils;
+//import org.adempiere.webui.adwindow.AbstractADWindowContent; 	//JPIERE
+//import org.adempiere.webui.apps.LabelsSearch;					//JPIERE
+//import org.adempiere.webui.apps.LabelsSearchController;		//JPIERE
 import org.adempiere.webui.component.Window;
 import org.adempiere.webui.component.ZkCssHelper;
+//import org.adempiere.webui.panel.LabelsPanel;					//JPIERE
 import org.adempiere.webui.util.ZKUpdateUtil;
 import org.zkoss.zul.Popup;
 import org.zkoss.zul.impl.LabelImageElement;

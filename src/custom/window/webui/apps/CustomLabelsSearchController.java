@@ -35,6 +35,7 @@ import org.adempiere.webui.component.Label;
 import org.adempiere.webui.component.ListHead;
 import org.adempiere.webui.component.ListItem;
 import org.adempiere.webui.component.Listbox;
+//import org.adempiere.webui.panel.LabelsPanel;	//JPIERE
 import org.adempiere.webui.theme.ThemeManager;
 import org.adempiere.webui.util.ZKUpdateUtil;
 import org.compiere.model.MLabel;
@@ -58,14 +59,25 @@ import org.zkoss.zul.Vlayout;
 
 import custom.window.webui.panel.CustomLabelsPanel;
 
+/**
+ * Controller for search on AD_Label* records.
+ */
 public class CustomLabelsSearchController implements EventListener<Event>{
+	/** Event echo from {@link #onSelect(LabelItem)} **/
 	public static final String ON_POST_SELECT_LABELITEM_EVENT = "onPostSelectLabelitem";
-	private static final String ON_SEARCH_ECHO = "onSearchEcho";
-	private static final String ON_LOAD_MORE = "onLoadMore";
+	/** Event echo to initiate search for a given input text **/
+	private static final String ON_SEARCH_ECHO_EVENT = "onSearchEcho";
+	/** TODO: not used, candidate for removal **/
+	private static final String ON_LOAD_MORE_EVENT = "onLoadMore";
+	/** parent of {@link #layout} **/
 	private Component parent;
+	/** Listbox to display search result **/
 	private Listbox listbox;
+	/** model for {@link #listbox} **/
 	private ListModelList<LabelItem> model;
+	/** main layout **/
 	private Vlayout layout;
+	/** label window panel, provider for AD_Table_ID and Record_ID **/
 	private CustomLabelsPanel labelsPanel;
 
 	/**
@@ -105,13 +117,13 @@ public class CustomLabelsSearchController implements EventListener<Event>{
 		ZKUpdateUtil.setWidth(listheader, "30px");
 		listhead.appendChild(listheader);
 		
-		layout.addEventListener(ON_SEARCH_ECHO, this);
-		layout.addEventListener(ON_LOAD_MORE, this);
+		layout.addEventListener(ON_SEARCH_ECHO_EVENT, this);
+		layout.addEventListener(ON_LOAD_MORE_EVENT, this);
 	}
 
 	@Override
 	public void onEvent(Event event) throws Exception {
-		if (event.getName().equals(ON_SEARCH_ECHO)) {
+		if (event.getName().equals(ON_SEARCH_ECHO_EVENT)) {
         	onSearchEcho((String) event.getData());
 		} else if (Events.ON_CLICK.equals(event.getName())) {
 			if (event.getTarget() instanceof ListItem) {
@@ -123,16 +135,16 @@ public class CustomLabelsSearchController implements EventListener<Event>{
 	}
 	
 	/**
-	 * Search for a given text
+	 * Echo {@link #ON_SEARCH_ECHO_EVENT} to initiate search for value
 	 * @param value
 	 */
 	public void search(String value) {
 		listbox.setModel((ListModel<?>)null);
-		Events.echoEvent(ON_SEARCH_ECHO, layout, value);
+		Events.echoEvent(ON_SEARCH_ECHO_EVENT, layout, value);
 	}
 	
 	/**
-	 * Search for a given text
+	 * Handle {@link #ON_SEARCH_ECHO_EVENT} to execute search for a given text
 	 * @param value
 	 */
 	public void onSearchEcho(String value) {

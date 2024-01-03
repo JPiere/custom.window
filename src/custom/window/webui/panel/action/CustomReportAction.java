@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.logging.Level;
 
 import org.adempiere.webui.LayoutUtils;
+//import org.adempiere.webui.adwindow.AbstractADWindowContent;	//JPIERE
 import org.adempiere.webui.apps.WProcessCtl;
 import org.adempiere.webui.component.Checkbox;
 import org.adempiere.webui.component.Column;
@@ -105,6 +106,7 @@ public class CustomReportAction implements EventListener<Event>
 			winReport.setBorder("normal");
 			winReport.setStyle("position:absolute");
 			winReport.addEventListener("onValidate", this);
+			winReport.addCallback(Window.AFTER_PAGE_DETACHED, t -> panel.focusToLastFocusEditor());
 
 			cboPrintFormat.setMold("select");
 			cboPrintFormat.getItems().clear();
@@ -373,9 +375,8 @@ public class CustomReportAction implements EventListener<Event>
 		else
 		{
 			// It's a default report using the standard printing engine
-			ReportEngine re = new ReportEngine (Env.getCtx(), pf, query, info);
+			ReportEngine re = new ReportEngine (Env.getCtx(), pf, query, info, null, gridTab.getWindowNo());
 			re.setWhereExtended(gridTab.getWhereExtended());
-			re.setWindowNo(gridTab.getWindowNo());
 
 			if (export)
 				export(re);

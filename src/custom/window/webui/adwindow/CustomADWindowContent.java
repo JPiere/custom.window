@@ -20,6 +20,19 @@
  * Sponsors:                                                                  *
  * - Idalica Corporation                                                      *
  *****************************************************************************/
+/******************************************************************************
+ * Product: JPiere                                                            *
+ * Copyright (C) Hideaki Hagiwara (h.hagiwara@oss-erp.co.jp)                  *
+ *                                                                            *
+ * This program is free software, you can redistribute it and/or modify it    *
+ * under the terms version 2 of the GNU General Public License as published   *
+ * by the Free Software Foundation. This program is distributed in the hope   *
+ * that it will be useful, but WITHOUT ANY WARRANTY.                          *
+ * See the GNU General Public License for more details.                       *
+ *                                                                            *
+ * JPiere is maintained by OSS ERP Solutions Co., Ltd.                        *
+ * (http://www.oss-erp.co.jp)                                                 *
+ *****************************************************************************/
 
 package custom.window.webui.adwindow;
 
@@ -46,29 +59,41 @@ import org.zkoss.zul.Tab;
 import org.zkoss.zul.Vlayout;
 
 /**
- *
- * This class is based on org.compiere.apps.APanel written by Jorg Janke.
- * @author Jorg Janke
+ * Content area of {@link ADWindow}.
  *
  * @author <a href="mailto:agramdass@gmail.com">Ashley G Ramdass</a>
  * @author <a href="mailto:hengsin@gmail.com">Low Heng Sin</a>
  * @date Feb 25, 2007
  * @version $Revision: 0.10 $
+ *
+ * @author Hideaki Hagiwara（h.hagiwara@oss-erp.co.jp）
+ *
  */
 public class CustomADWindowContent extends CustomAbstractADWindowContent
 {
     @SuppressWarnings("unused")
 	private static final CLogger logger = CLogger.getCLogger(CustomADWindowContent.class);
 
+    /** Main layout component **/
     private Vlayout layout;
-
+    /** Center Div of {@link #layout}, host {@link CompositeADTabbox} **/
     private Div contentArea;
 
+    /**
+     * @param ctx
+     * @param windowNo
+     * @param adWindowId
+     */
 	public CustomADWindowContent(Properties ctx, int windowNo, int adWindowId)
     {
         super(ctx, windowNo, adWindowId);
     }
 
+	/**
+	 * Layout UI.
+	 * Vertical layout of toolbar, breadCrumb, statusBar and {@link #contentArea}.
+	 */
+	@Override
    	protected Component doCreatePart(Component parent)
     {
    		layout = new JPiereADWindowVlayout(this);
@@ -100,6 +125,7 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
 
         LayoutUtils.addSclass("adwindow-status", statusBar);
 
+        //IADTabbox
         contentArea = new Div();
         contentArea.setParent(layout);
         ZKUpdateUtil.setVflex(contentArea, "1");
@@ -119,12 +145,20 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
         return layout;
     }
 
+	/**
+	 * Create {@link CompositeADTabbox}
+	 */
     protected CustomIADTabbox createADTab()
     {
     	CustomCompositeADTabbox composite = new CustomCompositeADTabbox();
     	return composite;
     }
 
+	/**
+	 * Get main layout component
+	 * @return {@link Vlayout}
+	 */
+	@Override
 	public Vlayout getComponent() {
 		return layout;
 	}
@@ -133,6 +167,7 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
      * @param event
      * @see EventListener#onEvent(Event)
      */
+	@Override
     public void onEvent(Event event) {
     	if (Events.ON_CTRL_KEY.equals(event.getName())) {
     		KeyEvent keyEvent = (KeyEvent) event;
@@ -154,6 +189,9 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
     	}
     }
 
+	/**
+	 * ITabOnCloseHandler to call {@link ADWindowContent#onExit(Callback)} when user wants to close an AD Window
+	 */
 	class TabOnCloseHanlder implements ITabOnCloseHandler, Callback<Boolean> {
 		private Tabpanel tabPanel;
 		public void onClose(Tabpanel tabPanel) {
@@ -170,8 +208,8 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
 	}
 
 	/**
-	 * close tab contain this window
-	 * @param tabPanel
+	 * Close tab related to tabPanel
+	 * @param tabPanel Tabpanel that represent AD_Window
 	 */
 	protected void closeTab (Tabpanel tabPanel) {
 		Tab tab = tabPanel.getLinkedTab();
@@ -180,6 +218,9 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
 			SessionManager.getAppDesktop().unregisterWindow(getWindowNo());
 	}
 
+	/**
+	 * Vlayout subclass to override onPageDetached. 
+	 */
 	public static class JPiereADWindowVlayout extends Vlayout implements IHelpContext {
 		/**
 		 * generated serial id
@@ -192,6 +233,9 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
 			this.content = content;
 		}
 
+		/**
+		 * clean up listeners
+		 */
 		@Override
 		public void onPageDetached(Page page) {
 			super.onPageDetached(page);

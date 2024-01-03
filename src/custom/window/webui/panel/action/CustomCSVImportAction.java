@@ -37,6 +37,7 @@ import org.adempiere.base.equinox.EquinoxExtensionLocator;
 import org.adempiere.exceptions.AdempiereException;
 import org.adempiere.webui.AdempiereWebUI;
 import org.adempiere.webui.LayoutUtils;
+//import org.adempiere.webui.adwindow.AbstractADWindowContent;  //JPIERE
 import org.adempiere.webui.adwindow.IADTabbox;
 import org.adempiere.webui.adwindow.IADTabpanel;
 import org.adempiere.webui.component.Button;
@@ -200,6 +201,7 @@ public class CustomCSVImportAction implements EventListener<Event>
 			LayoutUtils.addSclass("dialog-footer", confirmPanel);
 			vb.appendChild(confirmPanel);
 			confirmPanel.addActionListener(this);
+			winImportFile.addEventListener(Events.ON_CANCEL, e -> onCancel());
 		}
 
 		panel.getComponent().getParent().appendChild(winImportFile);
@@ -223,7 +225,7 @@ public class CustomCSVImportAction implements EventListener<Event>
 			UploadEvent ue = (UploadEvent) event;
 			processUploadMedia(ue.getMedia());
 		} else if (event.getTarget().getId().equals(ConfirmPanel.A_CANCEL)) {
-			winImportFile.onClose();
+			onCancel();
 		} else if (event.getTarget() == fTemplates) {
 			if (m_file_istream != null) {
 				m_file_istream.close();
@@ -240,7 +242,12 @@ public class CustomCSVImportAction implements EventListener<Event>
 			importFile();
 		} else if (event.getName().equals(DialogEvents.ON_WINDOW_CLOSE)) {
 			panel.hideBusyMask();
+			panel.focusToLastFocusEditor();
 		}
+	}
+
+	private void onCancel() {
+		winImportFile.onClose();
 	}
 
 	private void fillImportMode() {

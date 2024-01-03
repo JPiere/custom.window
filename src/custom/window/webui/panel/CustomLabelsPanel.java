@@ -29,6 +29,7 @@ package custom.window.webui.panel;
 import java.util.ArrayList;
 import java.util.List;
 
+//import org.adempiere.webui.adwindow.AbstractADWindowContent;	//JPIERE
 import org.adempiere.webui.apps.LabelsSearchController;
 import org.adempiere.webui.component.Label;
 import org.adempiere.webui.component.ZkCssHelper;

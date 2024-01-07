@@ -148,6 +148,7 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
 	/**
 	 * Create {@link CompositeADTabbox}
 	 */
+	 @Override
     protected CustomIADTabbox createADTab()
     {
     	CustomCompositeADTabbox composite = new CustomCompositeADTabbox();

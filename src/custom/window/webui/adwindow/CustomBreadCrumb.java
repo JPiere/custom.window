@@ -55,7 +55,6 @@ import org.zkoss.zul.Window;
 /**
  * Bread crumb component for AD Window
  * @author hengsin
- *
  */
 public class CustomBreadCrumb extends Div implements EventListener<Event> {
 

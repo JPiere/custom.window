@@ -58,7 +58,7 @@ import org.compiere.util.Util;
  */
 public abstract class CustomAbstractADTabbox extends AbstractUIPart implements CustomIADTabbox
 {
-    /** Logger                  */
+    /** Logger **/
     private static final CLogger  log = CLogger.getCLogger (CustomAbstractADTabbox.class);
      /** List of variables/columnName that's reference by one or more gridTab logic expression **/
     private ArrayList<String>   m_dependents = new ArrayList<String>();
@@ -310,7 +310,7 @@ public abstract class CustomAbstractADTabbox extends AbstractUIPart implements C
                         if (oldTabpanel.getRecord_ID() + zeroValid <= 0)
                            	canJump = false;
     					// IDEMPIERE-651 Allow navigating to a detail when parent doesn't have ID
-    					if (! canJump && Util.isEmpty(oldTabpanel.getGridTab().getKeyColumnName()))
+    					if (! canJump && (Util.isEmpty(oldTabpanel.getGridTab().getKeyColumnName()) || oldTabpanel.getGridTab().getKeyColumnName().endsWith("_UU")))
     						canJump = true;
                     }
                 }

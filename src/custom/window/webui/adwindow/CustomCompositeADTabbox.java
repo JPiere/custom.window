@@ -45,6 +45,7 @@ import org.adempiere.webui.adwindow.DetailPane;				//JPIERE
 import org.adempiere.webui.adwindow.IADTabpanel;				//JPIERE
 import org.adempiere.webui.component.ADTabListModel;
 import org.adempiere.webui.component.ADTabListModel.ADTabLabel;
+import org.adempiere.webui.component.Tabbox;
 import org.adempiere.webui.util.ZKUpdateUtil;
 import org.adempiere.webui.window.Dialog;
 import org.compiere.model.DataStatusEvent;

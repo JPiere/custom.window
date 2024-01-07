@@ -205,6 +205,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
 	private GridWindow        gridWindow;
 
+	/** AD Window content part that own this ADTabpanel instance **/
     private CustomAbstractADWindowContent      windowPanel;
 
     private int               windowNo;
@@ -2483,7 +2484,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
 	/**
 	 * 
-	 * @return {@link AbstractADWindowContenta}
+	 * @return {@link CustomAbstractADWindowContenta}
 	 */
 	public CustomAbstractADWindowContent getADWindowContent()
 	{

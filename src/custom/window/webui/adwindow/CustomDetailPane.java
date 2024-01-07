@@ -150,14 +150,6 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 	private static final String QUICK_FORM_IMAGE = "images/QuickForm16.png";
 	private static final String TOGGLE_IMAGE = "images/Multi16.png";
 
-	/** Timestamp for previous key event **/
-	private long prevKeyEventTime = 0;
-	/**
-	 * Previous KeyEvent reference.
-	 * Use together with {@link #prevKeyEventTime} to detect double firing of key event by browser.
-	 */
-	private KeyEvent prevKeyEvent;
-
 	/** tabbox for AD_Tabs **/
 	private Tabbox tabbox;
 
@@ -821,23 +813,9 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 			LayoutUtils.redraw(this);
         } else if (event.getName().equals(Events.ON_CTRL_KEY)) {
         	KeyEvent keyEvent = (KeyEvent) event;
-        	if (LayoutUtils.isReallyVisible(this)) {
-	        	//filter same key event that is too close
-	        	//firefox fire key event twice when grid is visible
-	        	long time = System.currentTimeMillis();
-	        	if (prevKeyEvent != null && prevKeyEventTime > 0 &&
-	        			prevKeyEvent.getKeyCode() == keyEvent.getKeyCode() &&
-	    				prevKeyEvent.getTarget() == keyEvent.getTarget() &&
-	    				prevKeyEvent.isAltKey() == keyEvent.isAltKey() &&
-	    				prevKeyEvent.isCtrlKey() == keyEvent.isCtrlKey() &&
-	    				prevKeyEvent.isShiftKey() == keyEvent.isShiftKey()) {
-	        		if ((time - prevKeyEventTime) <= 300) {
-	        			return;
-	        		}
-	        	}
+			if (LayoutUtils.isReallyVisible(this))
 	        	this.onCtrlKeyEvent(keyEvent);
-        	}
-		}
+       	}
 	}
 
 	/**
@@ -1169,8 +1147,6 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 			}
 		}
 		if (btn != null) {
-			prevKeyEventTime = System.currentTimeMillis();
-        	prevKeyEvent = keyEvent;
 			keyEvent.stopPropagation();
 			if (!btn.isDisabled() && btn.isVisible()) {
 				Events.sendEvent(btn, new Event(Events.ON_CLICK, btn));
@@ -1241,7 +1217,6 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 		}
 
 		/**
-		 *
 		 * @return true if tab have been toggle to form view
 		 */
 		public boolean isToggleToFormView() {

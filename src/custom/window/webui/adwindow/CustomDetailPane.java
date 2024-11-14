@@ -64,6 +64,7 @@ import org.adempiere.webui.component.Window;
 import org.adempiere.webui.session.SessionManager;
 import org.adempiere.webui.theme.ThemeManager;
 import org.adempiere.webui.util.ZKUpdateUtil;
+//import org.adempiere.webui.window.CustomizeGridViewDialog; //JPIERE Unused
 import org.adempiere.webui.window.WRecordInfo;
 import org.compiere.model.DataStatusEvent;
 import org.compiere.model.GridTab;
@@ -90,6 +91,7 @@ import org.zkoss.zul.A;
 import org.zkoss.zul.Div;
 import org.zkoss.zul.Hbox;
 import org.zkoss.zul.Hlayout;
+import org.zkoss.zul.LayoutRegion;
 import org.zkoss.zul.Popup;
 import org.zkoss.zul.Separator;
 import org.zkoss.zul.Space;
@@ -730,7 +732,8 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 
     	String labelText = buildLabelText(status);
     	if (error) {
-    		Clients.showNotification(buildNotificationText(status), "error", findTabpanel(this), "top_left", 3500, true);
+    		Component ref = isCollapsed(this) ? findTabpanel(this) : findTabpanel(messageContainer);
+    		Clients.showNotification(buildNotificationText(status), "error", ref, "top_left", 3500, true);
     	}
     	Label label = new Label(labelText);
     	messageContainer.appendChild(label);
@@ -755,6 +758,21 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
     			tp.getRecordToolbar().dynamicDisplay();
     		}
     	}
+	}
+
+	/**
+	 * Is parent of detailPane in collapsed state
+	 * @param detailPane
+	 * @return true if parent of detailPane is in collapsed state
+	 */
+	private boolean isCollapsed(CustomDetailPane detailPane) {
+		Component parent = detailPane.getParent();
+		while (parent != null) {
+			if (parent instanceof LayoutRegion lr)
+				return !lr.isOpen();
+			parent = parent.getParent();
+		}
+		return false;
 	}
 
 	/**
@@ -834,7 +852,7 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 	 * @param msg
 	 */
 	private void showPopup(boolean error, String msg) {
-		Clients.showNotification(buildNotificationText(msg), "error", findTabpanel(this), "at_pointer", 3500, true);
+		Clients.showNotification(buildNotificationText(msg), "error", null, "at_pointer", 3500, true);
 	}
 
 	/**
@@ -1097,7 +1115,7 @@ public class CustomDetailPane extends Panel implements EventListener<Event>, IdS
 	}
 
 	/**
-	 * add new record
+	 * add new row
 	 * @throws Exception
 	 */
 	public void onNew() throws Exception {

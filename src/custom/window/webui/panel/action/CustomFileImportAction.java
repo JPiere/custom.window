@@ -48,6 +48,7 @@ import org.adempiere.webui.component.Rows;
 import org.adempiere.webui.component.Window;
 import org.adempiere.webui.editor.WTableDirEditor;
 import org.adempiere.webui.event.DialogEvents;
+import org.adempiere.webui.session.SessionManager;
 import org.adempiere.webui.util.ReaderInputStream;
 import org.adempiere.webui.util.ZKUpdateUtil;
 import org.adempiere.webui.window.Dialog;
@@ -55,6 +56,7 @@ import org.compiere.model.GridTab;
 import org.compiere.model.MLookup;
 import org.compiere.model.MLookupFactory;
 import org.compiere.model.MLookupInfo;
+import org.compiere.model.MSysConfig;
 import org.compiere.util.Env;
 import org.compiere.util.Ini;
 import org.compiere.util.Msg;
@@ -76,7 +78,7 @@ import custom.window.webui.adwindow.CustomIADTabbox;
 import custom.window.webui.adwindow.CustomIADTabpanel;
 
 /**
- *
+ * Action to import data from uploaded file to GridTab
  * @author Carlos Ruiz
  *
  * @author Hideaki Hagiwara（h.hagiwara@oss-erp.co.jp）
@@ -86,7 +88,9 @@ public class CustomFileImportAction implements EventListener<Event>
 {
 	private CustomAbstractADWindowContent panel;
 
+	/** File Extension:IGridTabImporter */
 	private Map<String, IGridTabImporter> importerMap = null;
+	/** File Extension:Label */
 	private Map<String, String> extensionMap = null;
 
 	private Window winImportFile = null;
@@ -96,6 +100,8 @@ public class CustomFileImportAction implements EventListener<Event>
 	private Listbox fCharset = new Listbox();
 	private WTableDirEditor fImportMode;
 	private InputStream m_file_istream = null;
+	/* SysConfig USE_ESC_FOR_TAB_CLOSING */
+	private boolean isUseEscForTabClosing = MSysConfig.getBooleanValue(MSysConfig.USE_ESC_FOR_TAB_CLOSING, false, Env.getAD_Client_ID(Env.getCtx()));
 
 	/**
 	 * @param panel
@@ -106,7 +112,7 @@ public class CustomFileImportAction implements EventListener<Event>
 	}
 
 	/**
-	 * execute import action
+	 * Execute import action
 	 */
 	public void fileImport()
 	{
@@ -263,6 +269,10 @@ public class CustomFileImportAction implements EventListener<Event>
 	}
 
 	private void onCancel() {
+		// do not allow to close tab for Events.ON_CTRL_KEY event
+		if(isUseEscForTabClosing)
+			SessionManager.getAppDesktop().setCloseTabWithShortcut(false);
+
 		winImportFile.onClose();
 	}
 
@@ -286,6 +296,9 @@ public class CustomFileImportAction implements EventListener<Event>
 		bFile.setLabel(media.getName());
 	}
 
+	/**
+	 * Import uploaded file
+	 */
 	private void importFile() {
 		try {
 			ListItem li = cboType.getSelectedItem();

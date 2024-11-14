@@ -251,12 +251,13 @@ public class CustomLabelsSearchController implements EventListener<Event>{
 		// Assign
 		if (!MLabelAssignment.hasLabelAssignment(label.get_ID(),
 				labelsPanel.getAD_Table_ID(),
-				labelsPanel.getRecord_ID())) {
+				labelsPanel.getRecord_UU())) {
 			MLabelAssignment assign = new MLabelAssignment(Env.getCtx(), 0, null);
 			assign.setAD_Org_ID(label.getAD_Org_ID());
 			assign.setAD_Label_ID(label.get_ID());
 			assign.setAD_Table_ID(labelsPanel.getAD_Table_ID());
 			assign.setRecord_ID(labelsPanel.getRecord_ID());
+			assign.setRecord_UU(labelsPanel.getRecord_UU());
 			assign.saveEx();
 		}
 		

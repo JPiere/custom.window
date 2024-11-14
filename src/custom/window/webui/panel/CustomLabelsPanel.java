@@ -35,6 +35,8 @@ import org.adempiere.webui.component.Label;
 import org.adempiere.webui.component.ZkCssHelper;
 import org.compiere.model.MLabel;
 import org.compiere.model.MLabelAssignment;
+import org.compiere.model.MTable;
+import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.util.Env;
 import org.zkoss.zk.ui.Component;
@@ -46,22 +48,54 @@ import org.zkoss.zul.Groupbox;
 
 import custom.window.webui.adwindow.CustomAbstractADWindowContent;
 
+/**
+ * Label for a record (AD_LabelAssignment)
+ */
 public class CustomLabelsPanel extends Div implements EventListener<Event> {
+	/**
+	 * generated serial id
+	 */
 	private static final long serialVersionUID = 2232899183255702050L;
 	private CustomAbstractADWindowContent abstractADWindowContent;
 	private int AD_Table_ID;
 	private int Record_ID;	
+	private String Record_UU;
 	
 	/**
 	 * Standard constructor
 	 * @param abstractADWindowContent 
 	 * @param AD_Table_ID
 	 * @param Record_ID
+ 	 * @deprecated Use {@link LabelsPanel#LabelsPanel(AbstractADWindowContent, int, int, String)} instead
 	 */
+	@Deprecated
 	public CustomLabelsPanel(CustomAbstractADWindowContent abstractADWindowContent, int AD_Table_ID, int Record_ID) {
+		this(abstractADWindowContent, AD_Table_ID, Record_ID, null);
+		if (Record_ID > 0) {
+			MTable table = MTable.get(AD_Table_ID);
+			PO po = table.getPO(Record_ID, null);
+			this.Record_UU = po.get_UUID();
+		}
+	}	
+
+	/**
+	 * Standard constructor
+	 * @param abstractADWindowContent 
+	 * @param AD_Table_ID
+	 * @param Record_ID
+	 * @param Record_UU
+	 */
+	public CustomLabelsPanel(CustomAbstractADWindowContent abstractADWindowContent, int AD_Table_ID, int Record_ID, String Record_UU) {
 		this.abstractADWindowContent = abstractADWindowContent;
 		this.AD_Table_ID = AD_Table_ID;
 		this.Record_ID = Record_ID;
+		if (Record_ID > 0 && Record_UU == null) {
+			MTable table = MTable.get(AD_Table_ID);
+			PO po = table.getPO(Record_ID, null);
+			this.Record_UU = po.get_UUID();
+		} else {
+			this.Record_UU = Record_UU;
+		}
 		setStyle("padding:0px 5px;");
 		addEventListener(LabelsSearchController.ON_POST_SELECT_LABELITEM_EVENT, this);		
 		update();
@@ -69,7 +103,7 @@ public class CustomLabelsPanel extends Div implements EventListener<Event> {
 
 	/**
 	 * Get current table id
-	 * @return id
+	 * @return AD_Table_ID
 	 */
 	public int getAD_Table_ID() {
 		return AD_Table_ID;
@@ -77,10 +111,18 @@ public class CustomLabelsPanel extends Div implements EventListener<Event> {
 
 	/**
 	 * Get current record id
-	 * @return
+	 * @return Record_ID
 	 */
 	public int getRecord_ID() {
 		return Record_ID;
+	}
+
+	/**
+	 * Get current record uuid
+	 * @return Record_UU
+	 */
+	public String getRecord_UU() {
+		return Record_UU;
 	}
 
 	@Override
@@ -100,8 +142,8 @@ public class CustomLabelsPanel extends Div implements EventListener<Event> {
 		
 		// Query
 		List<MLabelAssignment> assignmentsList = new Query(Env.getCtx(),
-				MLabelAssignment.Table_Name, "AD_Table_ID=? AND Record_ID=?", null)
-			.setParameters(AD_Table_ID, Record_ID)
+				MLabelAssignment.Table_Name, "AD_Table_ID=? AND Record_UU=?", null)
+			.setParameters(AD_Table_ID, Record_UU)
 			.setOrderBy(MLabelAssignment.COLUMNNAME_Created)
 			.list();
 		

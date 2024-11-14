@@ -44,6 +44,7 @@ import org.adempiere.webui.window.Dialog;
 import org.compiere.model.GridTab;
 import org.compiere.model.MQuery;
 import org.compiere.model.MRole;
+import org.compiere.model.MTable;
 import org.compiere.model.PrintInfo;
 import org.compiere.print.MPrintFormat;
 import org.compiere.print.ReportCtl;
@@ -66,9 +67,10 @@ import org.zkoss.zul.Space;
 import org.zkoss.zul.Tabpanel;
 import org.zkoss.zul.impl.LabelImageElement;
 
-import custom.window.webui.adwindow.CustomAbstractADWindowContent;
+import custom.window.webui.adwindow.CustomAbstractADWindowContent;//JPIERE
 
 /**
+ * Action for Report toolbar button
  * @author Elaine
  * @date September 6, 2012
  */
@@ -88,12 +90,18 @@ public class CustomReportAction implements EventListener<Event>
 
 	private List<KeyNamePair>	printFormatList = new ArrayList<KeyNamePair>();
 
+	/**
+	 * @param panel
+	 */
 	public CustomReportAction(CustomAbstractADWindowContent panel)
 	{
 		this.panel = panel;
 		getPrintFormats(panel.getActiveGridTab().getAD_Table_ID(), panel.getActiveGridTab().getAD_Window_ID());
 	}
 
+	/**
+	 * Show report (print format) selection popup
+	 */
 	public void show()
 	{
 		int AD_Table_ID=panel.getActiveGridTab().getAD_Table_ID();
@@ -284,13 +292,17 @@ public class CustomReportAction implements EventListener<Event>
 		//	Query
 		boolean currentRowOnly = chkCurrentRowOnly.isChecked();
 		int Record_ID = 0;
-		List <Integer> RecordIDs = null;
+		String Record_UU = null;
+		List <Integer> jasperRecordIDs = null;
+		List <String> jasperRecordUUs = null;
 		MQuery query = new MQuery(gridTab.getTableName());
+		MTable table = MTable.get(gridTab.getAD_Table_ID());
 		StringBuilder whereClause = new StringBuilder("");
 
 		if (currentRowOnly)
 		{
 			Record_ID = gridTab.getRecord_ID();
+			Record_UU = gridTab.getRecord_UU();
 			whereClause.append(gridTab.getTableModel().getWhereClause(gridTab.getCurrentRow()));
 			if (whereClause.length() == 0)
 				whereClause.append(gridTab.getTableModel().getSelectWhereClause());
@@ -299,10 +311,18 @@ public class CustomReportAction implements EventListener<Event>
 		else
 		{
 			whereClause.append(gridTab.getTableModel().getSelectWhereClause());
-			RecordIDs = new ArrayList<Integer>();
-			for(int i = 0; i < gridTab.getRowCount(); i++)
-			{
-				RecordIDs.add(gridTab.getKeyID(i));
+			if (pf != null && pf.getJasperProcess_ID() > 0) {
+				if (table.isUUIDKeyTable()) {
+					jasperRecordUUs = new ArrayList<String>();
+					for(int i = 0; i < gridTab.getRowCount(); i++) {
+						jasperRecordUUs.add(gridTab.getKeyUUID(i));
+					}
+				} else {
+					jasperRecordIDs = new ArrayList<Integer>();
+					for(int i = 0; i < gridTab.getRowCount(); i++) {
+						jasperRecordIDs.add(gridTab.getKeyID(i));
+					}
+				}
 			}
 		}
 
@@ -335,14 +355,15 @@ public class CustomReportAction implements EventListener<Event>
 
 		query.addRestriction(whereClause.toString());
 
-		PrintInfo info = new PrintInfo(pf.getName(), pf.getAD_Table_ID(), Record_ID);
+		PrintInfo info = new PrintInfo(pf.getName(), pf.getAD_Table_ID(), Record_ID, Record_UU);
 		info.setDescription(query.getInfo());
 
 		if(pf != null && pf.getJasperProcess_ID() > 0)
 		{
 			// It's a report using the JasperReports engine
-			ProcessInfo pi = new ProcessInfo ("", pf.getJasperProcess_ID(), pf.getAD_Table_ID(), Record_ID);
-			pi.setRecord_IDs(RecordIDs);
+			ProcessInfo pi = new ProcessInfo ("", pf.getJasperProcess_ID(), pf.getAD_Table_ID(), Record_ID, Record_UU);
+			pi.setRecord_IDs(jasperRecordIDs);
+			pi.setRecord_UUs(jasperRecordUUs);
 			//pi.setIsBatch(true);
 
 			if (export)

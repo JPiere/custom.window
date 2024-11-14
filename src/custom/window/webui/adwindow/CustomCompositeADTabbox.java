@@ -186,14 +186,14 @@ public class CustomCompositeADTabbox extends CustomAbstractADTabbox
 								} else {
 									if (!getSelectedDetailADTabpanel().getGridTab().isNew()) {
 										getSelectedDetailADTabpanel().getGridTab().dataNew(false);
-										if (!headerTab.isDetailVisible()) {
+										if (!((CustomADTabpanel)headerTab).isDetailVisible()) {
 											String uuid = headerTab.getCustomDetailPane().getParent().getUuid();
 											String vid = getSelectedDetailADTabpanel().getCustomGridView().getUuid();
 											String script = "setTimeout(function(){zk('#"+uuid+"').$().setOpen(true);setTimeout(function(){let v=zk('#" + vid
 													+ "').$();let e=new zk.Event(v,'onEditCurrentRow',null,{toServer:true});zAu.send(e);},200);},200)";
 											Clients.response(new AuScript(script));
 										} else {
-											boolean isFormView = headerTab.getCustomDetailPane().getSelectedPanel().isToggleToFormView();
+											boolean isFormView = ((CustomADTabpanel)headerTab).getCustomDetailPane().getSelectedPanel().isToggleToFormView();
 											if (isFormView) {
 												getSelectedDetailADTabpanel().dynamicDisplay(0);
 												focusToTabpanel(getSelectedDetailADTabpanel());
@@ -749,7 +749,7 @@ public class CustomCompositeADTabbox extends CustomAbstractADTabbox
 						detailPane.setSelectedIndex(0);
 						activateDetailIfVisible();
 					} else {
-						if (headerTab.isDetailVisible() && detailPane.getSelectedADTabpanel() != null) {
+						if (((CustomADTabpanel) headerTab).isDetailVisible() && detailPane.getSelectedADTabpanel() != null) {
 							CustomIADTabpanel selectDetailPanel = detailPane.getSelectedADTabpanel();
 							if (!selectDetailPanel.isVisible()) {
 								selectDetailPanel.setVisible(true);

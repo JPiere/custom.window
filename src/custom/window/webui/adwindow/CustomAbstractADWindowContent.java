@@ -34,6 +34,8 @@ package custom.window.webui.adwindow;
 import static org.compiere.model.MSysConfig.*;
 import static org.compiere.model.SystemIDs.*;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -45,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -552,15 +555,16 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
 				gridWindow.initTab(tabIndex);
 				//init parent tab by parent ids
 				StringBuilder sql = new StringBuilder("SELECT ").append(gTab.getLinkColumnName()).append(" FROM ").append(gTab.getTableName()).append(" WHERE ").append(query.getWhereClause());
-				List<Object> parentIds = DB.getSQLValueObjectsEx(null, sql.toString());
+				List<List<Object>> parentIds = DB.getSQLArrayObjectsEx(null, sql.toString());
 				if (parentIds!=null && parentIds.size() > 0)
 				{
 					GridTab parentTab = null;
 					Map<Integer, MQuery>queryMap = new TreeMap<Integer, MQuery>();
 					Map<Integer, MQuery>childrenQueryMap = new TreeMap<Integer, MQuery>();//JPIERE-0464: JPiere Zoom to Detail
 
-					for (Object parentId : parentIds)
+					for (List<Object>parentIdList : parentIds)
 					{
+						Object parentId = parentIdList.get(0);
 						Map<Integer, Object[]>parentMap = new TreeMap<Integer, Object[]>();
 						Map<Integer, Object[]>childrenMap = new TreeMap<Integer, Object[]>();//JPIERE-0464: JPiere Zoom to Detail
 
@@ -813,6 +817,7 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
 		final GridTab gTab = gridWindow.getTab(tabIndex);
 		Env.setContext(ctx, curWindowNo, tabIndex, GridTab.CTX_TabLevel, Integer.toString(gTab.getTabLevel()));
 
+		AtomicBoolean zoomQuery = new AtomicBoolean(false);
 		// Query first tab
 		if (tabIndex == 0)
 		{
@@ -845,6 +850,8 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
 
 					    initQueryOnNew(result);
 				    }
+					if (query != null && query == result)
+						zoomQuery.set(true);
 				}
 
 			});
@@ -889,6 +896,15 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
 			//fallback to ADTabpanel
 			CustomADTabpanel fTabPanel = new CustomADTabpanel();
 			initTabPanel(query, tabIndex, gTab, fTabPanel);
+			// force single row mode for zoom query that return 1 record
+			if (query != null && zoomQuery.get())
+			{
+				if (gTab.getRowCount() == 1 && !gTab.isNew() && adTabbox.getSelectedTabpanel().isGridView()
+						&& adTabbox.getSelectedTabpanel().getGridTab() == gTab)
+				{
+					adTabbox.getSelectedTabpanel().switchRowPresentation();
+				}
+			}
 		}
 
 		return gTab;
@@ -971,15 +987,9 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
                 }
             }
             //
-            StringBuffer sql = new StringBuffer("SELECT COUNT(*) FROM ")
-                    .append(mTab.getTableName());
-            if (where.length() > 0)
-                sql.append(" WHERE ").append(where);
-            String finalSQL = MRole.getDefault().addAccessSQL(sql.toString(),
-            		mTab.getTableName(), MRole.SQL_NOTQUALIFIED, MRole.SQL_RO);
-            int no = DB.getSQLValue(null, finalSQL.toString());
-            //
-            require = mTab.isQueryRequire(no);
+            int no = getRecordCount(mTab, where);
+            // show find dialog if count timeout/exception
+            require = no == -1 ? true : mTab.isQueryRequire(no);
         }
         
         // Show find window (if required)
@@ -1033,6 +1043,35 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
         	callback.onCallback(query);
         }
     } // initialQuery
+
+    /**
+     * Get record count
+     * @param mTab
+     * @param where
+     * @return record count
+     */
+	private int getRecordCount(GridTab mTab, StringBuffer where) {
+		StringBuffer sql = new StringBuffer("SELECT COUNT(*) FROM ")
+		        .append(mTab.getTableName());
+		if (where.length() > 0)
+		    sql.append(" WHERE ").append(where);
+		String finalSQL = MRole.getDefault().addAccessSQL(sql.toString(),
+				mTab.getTableName(), MRole.SQL_NOTQUALIFIED, MRole.SQL_RO);
+		int no = -1;
+        int timeout = MSysConfig.getIntValue(MSysConfig.GRIDTABLE_INITIAL_COUNT_TIMEOUT_IN_SECONDS, 
+        		GridTable.DEFAULT_GRIDTABLE_COUNT_TIMEOUT_IN_SECONDS, Env.getAD_Client_ID(Env.getCtx()));
+		try (PreparedStatement stmt = DB.prepareStatement(finalSQL, null)) {
+			if (timeout > 0)
+				stmt.setQueryTimeout(timeout);
+			ResultSet rs = stmt.executeQuery();
+			if (rs.next())
+				no = rs.getInt(1);
+		} catch (SQLException e) {
+			logger.log(Level.WARNING, e.getMessage(), e);
+			no = -1;
+		}
+		return no;
+	}	
 
     /**
      * Setup find window UI properties
@@ -1692,6 +1731,7 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
 	public void saveAndNavigate(final Callback<Boolean> callback) {
 		if (adTabbox != null)
 		{
+			boolean newrecod = adTabbox.getSelectedGridTab().isNew();
 			if (adTabbox.isSortTab())
 			{
 				onSave(false, true, callback);
@@ -1706,12 +1746,16 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
 				{
 					//  new record, but nothing changed
 					adTabbox.dataIgnore();
+			        if (newrecod)
+			        	onRefresh(true, false);
 					callback.onCallback(true);
 				}
 			}   //  there is a change
 			else {
 				// just in case
 				adTabbox.dataIgnore();
+				if (newrecod)
+			        onRefresh(true, false);
 				callback.onCallback(true);
 			}
 		}
@@ -1849,15 +1893,6 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
 		toolbar.enableQuickForm(adTabbox.getSelectedTabpanel().isEnableQuickFormButton() && !adTabbox.getSelectedGridTab().isReadOnly());
 
         boolean isNewRow = adTabbox.getSelectedGridTab().getRowCount() == 0 || adTabbox.getSelectedGridTab().isNew();
-        //Deepak-Enabling customize button IDEMPIERE-364
-        if(adTabbox.getSelectedTabpanel() instanceof ADSortTab){//consistent with dataStatusChanged
-        	toolbar.enableProcessButton (false);
-        	toolbar.enableCustomize(false);
-        }else{
-        	CustomADTabpanel adtab = (CustomADTabpanel) adTabbox.getSelectedTabpanel();
-            toolbar.enableProcessButton(!isNewRow && adtab != null && adtab.getToolbarButtons().size() > 0);
-            toolbar.enableCustomize(adtab.isGridView());
-        }
 
 		CustomIADTabpanel adtab = adTabbox.getSelectedTabpanel();
         toolbar.enableProcessButton(adtab != null && adtab.isEnableProcessButton());
@@ -1881,7 +1916,16 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
     {
     	//ignore non-ui thread event.
     	if (Executions.getCurrent() == null)
+    	{
+    		// Re-post incremental loading event to UI thread
+    		if (e.isLoading() && e.getSource() != null && e.getSource().equals(adTabbox.getSelectedGridTab().getTableModel()))
+    		{
+    			Executions.schedule(getComponent().getDesktop(), evt -> {
+    				this.dataStatusChanged(e);
+    			}, new Event("onAsynchronousDataStatusChanged"));
+    		}
     		return;
+    	}
 
     	boolean detailTab = false;
     	if (e.getSource() instanceof GridTable)
@@ -2147,7 +2191,7 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
 
         //update recent item
         if (changed && !readOnly && !toolbar.isSaveEnable() ) {
-        	if (!Util.isEmpty(tabPanel.getGridTab().getRecord_UU())) {
+        	if (!Util.isEmpty(tabPanel.getGridTab().getRecord_UU()) || tabPanel.getGridTab().getRecord_ID() > 0) {
             	if (adTabbox.getSelectedIndex() == 0 && !detailTab) {
             		MRecentItem.addModifiedField(ctx, adTabbox.getSelectedGridTab().getAD_Table_ID(),
             				adTabbox.getSelectedGridTab().getRecord_ID(), adTabbox.getSelectedGridTab().getRecord_UU(), Env.getAD_User_ID(ctx),
@@ -2313,7 +2357,7 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
 
         toolbar.enableTabNavigation(breadCrumb.hasParentLink(), adTabbox.getSelectedDetailADTabpanel() != null);
 
-        IADTabpanel adtab = adTabbox.getSelectedTabpanel();
+        CustomADTabpanel adtab =  (CustomADTabpanel) adTabbox.getSelectedTabpanel();
         toolbar.enableProcessButton(adtab != null && adtab.isEnableProcessButton());
         toolbar.enableCustomize(adtab.isEnableCustomizeButton());
 
@@ -3044,7 +3088,7 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
 
 		if (wasChanged) {
 		    if (newRecord) {
-		    	if (!Util.isEmpty(adTabbox.getSelectedGridTab().getRecord_UU())) {
+		    	if (!Util.isEmpty(adTabbox.getSelectedGridTab().getRecord_UU()) || adTabbox.getSelectedGridTab().getRecord_ID() > 0) {
 		        	if (adTabbox.getSelectedIndex() == 0) {
 			        	MRecentItem.addModifiedField(ctx, adTabbox.getSelectedGridTab().getAD_Table_ID(),
 			        			adTabbox.getSelectedGridTab().getRecord_ID(), adTabbox.getSelectedGridTab().getRecord_UU(), Env.getAD_User_ID(ctx),
@@ -4484,6 +4528,12 @@ public abstract class CustomAbstractADWindowContent extends AbstractUIPart imple
 	 * @param pi
 	 */
 	private void onModalClose(ProcessInfo pi) {
+		if (getActiveGridTab().isQuickForm){
+			statusBarQF.setStatusLine(null);
+		}else{
+			statusBar.setStatusLine(null);
+		}
+		
 		boolean notPrint = pi != null
 		&& pi.getAD_Process_ID() != adTabbox.getSelectedGridTab().getAD_Process_ID()
 		&& pi.isReportingProcess() == false;

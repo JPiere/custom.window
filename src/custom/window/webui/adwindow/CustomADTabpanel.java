@@ -42,7 +42,6 @@ import java.util.logging.Level;
 
 import org.adempiere.base.Core;
 import org.adempiere.exceptions.AdempiereException;
-import org.adempiere.exceptions.DBException;
 import org.adempiere.util.Callback;
 import org.adempiere.webui.AdempiereIdGenerator;
 import org.adempiere.webui.AdempiereWebUI;
@@ -264,7 +263,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 	private Group currentGroup;
 
 	/** Panel for child tabs, south of {@link #formContainer} **/
-	private CustomDetailPane detailPane;
+	private CustomDetailPane customDetailPane;
 
 	/** true if this ADTabpanel instance is own by detail pane **/
 	private boolean detailPaneMode;
@@ -411,7 +410,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
     @Override
     public void setCustomDetailPane(CustomDetailPane component) {
-		detailPane = component;
+		customDetailPane = component;
 
 		Borderlayout borderLayout = (Borderlayout) formContainer;
 		South south = borderLayout.getSouth();
@@ -451,7 +450,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
     @Override
     public CustomDetailPane getCustomDetailPane() {
-    	return detailPane;
+    	return customDetailPane;
     }
 
     /**
@@ -1403,24 +1402,10 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     public void query (boolean onlyCurrentRows, int onlyCurrentDays, int maxRows)
     {
     	boolean open = gridTab.isOpen();
-    	try
-    	{
 	        gridTab.query(onlyCurrentRows, onlyCurrentDays, maxRows);
 	        if (listPanel.isVisible() && !open)
 	        	gridTab.getTableModel().fireTableDataChanged();
     	}
-    	catch (Exception e)
-    	{
-    		if (DBException.isTimeout(e))
-    		{
-    			throw e;
-    		}
-    		else
-    		{
-    			Dialog.error(windowNo, e.getMessage());
-    		}
-    	}
-    }
 
     /**
      * Reset detail data grid for new parent record that's not saved yet.
@@ -1559,7 +1544,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     	}
     	else if (treePanel != null && event.getTarget() == treePanel.getTree()) {
     		Treeitem item =  treePanel.getTree().getSelectedItem();
-    		if (item.getValue() != null)
+    		if (item != null && item.getValue() != null)
     			navigateTo((DefaultTreeNode<MTreeNode>)item.getValue());
     	}
     	else if (ON_DEFER_SET_SELECTED_NODE.equals(event.getName())) {
@@ -1570,12 +1555,12 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     		windowPanel.onSavePayment();
     	}
     	else if (ON_POST_INIT_EVENT.equals(event.getName())) {
-    		if (isDetailVisible() && detailPane.getSelectedADTabpanel() != null) {
-    			detailPane.getSelectedADTabpanel().activate(true);
+    		if (isDetailVisible() && customDetailPane.getSelectedADTabpanel() != null) {
+    			customDetailPane.getSelectedADTabpanel().activate(true);
     		}
     	}
     	else if (event.getTarget() instanceof South) {
-    		if (detailPane != null) {
+    		if (customDetailPane != null) {
     			boolean openEvent = event instanceof OpenEvent;
     			if (openEvent) {
     				OpenEvent oe = (OpenEvent)event;
@@ -1632,19 +1617,21 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
     			return;
     	}
 
-		if (detailPane.getParent() == null) {
-			formContainer.appendSouth(detailPane);
+		if (customDetailPane.getParent() == null) {
+			formContainer.appendSouth(customDetailPane);
 		}
-		CustomIADTabpanel tabPanel = detailPane.getSelectedADTabpanel();
+		CustomIADTabpanel tabPanel = customDetailPane.getSelectedADTabpanel();
     	if (tabPanel != null) {
-    		if (!tabPanel.isActivated()) {
+    		if (!tabPanel.isActivated() || !customDetailPane.isVisible()) {
+    			if (!customDetailPane.isVisible())
+    				customDetailPane.setVisible(true);
     			tabPanel.activate(true);
-    		} else {
-    			tabPanel.getGridView().invalidateGridView();
+    		} else if (tabPanel.getCustomGridView() != null){
+    			tabPanel.getCustomGridView().invalidateGridView();
     		}
 	    	if (!tabPanel.isGridView()) {
-	    		if (detailPane.getSelectedPanel().isToggleToFormView()) {
-	    			detailPane.getSelectedPanel().afterToggle();
+	    		if (customDetailPane.getSelectedPanel().isToggleToFormView()) {
+	    			customDetailPane.getSelectedPanel().afterToggle();
 	    		} else {
 	    			tabPanel.switchRowPresentation();
 	    		}
@@ -2138,11 +2125,11 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 		if (formContainer.getSouth() != null) {
 			formContainer.getSouth().setVisible(true);
 			if (formContainer.getSouth().isOpen()) {
-				if (detailPane != null) {
-					if (detailPane.getParent() != formContainer.getSouth())
-						formContainer.appendSouth(detailPane);
+				if (customDetailPane != null) {
+					if (customDetailPane.getParent() != formContainer.getSouth())
+						formContainer.appendSouth(customDetailPane);
 					else
-						detailPane.setVisible(true);
+						customDetailPane.setVisible(true);
 				}
 			}
 		}
@@ -2154,8 +2141,8 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 	private void detachDetailPane() {
 		if (formContainer.getSouth() != null) {
 			formContainer.getSouth().setVisible(false);
-			if (detailPane != null && detailPane.getParent() != null) {
-				detailPane.setVisible(false);
+			if (customDetailPane != null && customDetailPane.getParent() != null) {
+				customDetailPane.setVisible(false);
 			}
 		}
 	}
@@ -2211,7 +2198,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 	 */
 	public void activateDetailIfVisible() {
 		if (isDetailVisible()) {
-			CustomIADTabpanel tabPanel = detailPane.getSelectedADTabpanel();
+			CustomIADTabpanel tabPanel = customDetailPane.getSelectedADTabpanel();
 	    	if (tabPanel != null && !tabPanel.isActivated()) {
 		    	tabPanel.activate(true);
 		    	if (!tabPanel.isGridView()) {
@@ -2241,7 +2228,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 			return false;
 		}
 
-		return detailPane != null;
+		return customDetailPane != null;
 	}
 
 	/**
@@ -2253,7 +2240,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 			return false;
 		}
 
-		return detailPane != null && detailPane.getTabcount() > 0;
+		return customDetailPane != null && customDetailPane.getTabcount() > 0;
 	}
 
 	/**
@@ -2484,7 +2471,7 @@ DataStatusListener, CustomIADTabpanel, IdSpace, IFieldEditorContainer
 
 	/**
 	 * 
-	 * @return {@link CustomAbstractADWindowContenta}
+	 * @return {@link JPiereAbstractADWindowContenta}
 	 */
 	public CustomAbstractADWindowContent getADWindowContent()
 	{

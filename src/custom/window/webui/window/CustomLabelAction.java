@@ -42,6 +42,9 @@ import custom.window.webui.apps.CustomLabelsSearch;
 import custom.window.webui.apps.CustomLabelsSearchController;
 import custom.window.webui.panel.CustomLabelsPanel;
 
+/**
+ * Toolbar action for labelling of record (AD_labelAssignment)
+ */
 public class CustomLabelAction {
 	private CustomAbstractADWindowContent panel;	
 	private Window window = null;	
@@ -55,7 +58,8 @@ public class CustomLabelAction {
 		this.panel = panel;	
 		int AD_Table_ID = panel.getActiveGridTab().getAD_Table_ID();
 		int Record_ID = panel.getActiveGridTab().getRecord_ID();
-		labelsPanel = new CustomLabelsPanel(panel, AD_Table_ID, Record_ID);
+		String Record_UU = panel.getActiveGridTab().getRecord_UU();
+		labelsPanel = new CustomLabelsPanel(panel, AD_Table_ID, Record_ID, Record_UU);
 	}	
 
 	/**

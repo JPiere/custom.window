@@ -27,6 +27,8 @@ import org.adempiere.base.Core;
 import org.adempiere.model.MTabCustomization;
 import org.adempiere.util.Callback;
 import org.adempiere.webui.ClientInfo;
+import org.adempiere.webui.LayoutUtils;
+//import org.adempiere.webui.apps.form.IQuickForm;
 import org.adempiere.webui.adwindow.ADWindowToolbar;			//JPIERE
 import org.adempiere.webui.adwindow.GridTabRowRenderer;		//JPIERE
 import org.adempiere.webui.adwindow.GridTableListModel;		//JPIERE
@@ -80,7 +82,7 @@ import custom.window.form.CustomWQuickForm;
 
 /**
  * Quick Grid view implemented using the Grid component (Base on {@link GridView}).
- *
+ * 
  * @author Logilite Technologies
  * @since Nov 03, 2017
  */
@@ -101,7 +103,7 @@ public class CustomQuickGridView extends Vbox
 
 	/** default paging size for mobile client **/
 	private static final int DEFAULT_MOBILE_PAGE_SIZE = 20;
-
+	
 	/** minimum column width **/
 	private static final int MIN_COLUMN_WIDTH = 100;
 
@@ -133,19 +135,19 @@ public class CustomQuickGridView extends Vbox
 	public static final String		EVENT_ON_SET_FOCUS_TO_FIRST_CELL	= "onSetFocusToFirstCell";
 	public static final String		EVENT_ON_AFTER_SAVE					= "onAfterSave";
 	public static final String		EVENT_ONFOCUS_AFTER_SAVE			= "onFocusAfterSave";
-
+	
 	// Code for navigation to setcurrentcell
 	public static final int			NAVIGATE_CODE						= 1;
 	public static final int			FOCUS_CODE							= 0;
-
+	
 	/** data grid instance **/
 	private Grid listbox = null;
 
 	private int pageSize = DEFAULT_PAGE_SIZE;
 
 	/**
-	 * list field display in grid mode, in case user customize grid
-	 * this list container only display list.
+	 * List field display in grid mode. If there are user customize grid record,
+	 * this list contain only the customized display list.
 	 */
 	private GridField[] gridFields;
 	
@@ -187,7 +189,7 @@ public class CustomQuickGridView extends Vbox
 
 	/** checkbox to select all row of current page **/
 	protected Checkbox selectAll;
-
+	
 	/** true if there are AD_Tab_Customization for GridTab **/
 	protected boolean isHasCustomizeData = false;
 
@@ -196,7 +198,7 @@ public class CustomQuickGridView extends Vbox
 
 	/** true if no new row or new row have been saved **/
 	public boolean isNewLineSaved = true;
-
+	
 	// Prevent focus change until render is complete
 	private boolean isOnFocusAfterSave = false;
 	// To prevent 'onFocus' event fire twice on same component.
@@ -206,8 +208,8 @@ public class CustomQuickGridView extends Vbox
 	public CustomWQuickForm				quickForm;
 
 	/**
-	 * list field display in grid mode, in case user customize grid
-	 * this list container only customize list.
+	 * List field display in grid mode. If there are user customize grid record,
+	 * this list contain only the customized display list.
 	 * @return GridField[]
 	 */
 	public GridField[] getGridField() {
@@ -238,10 +240,10 @@ public class CustomQuickGridView extends Vbox
 		createListbox();
 
 		ZKUpdateUtil.setHflex(this, "1");
-
+		
 		gridFooter = new Div();
 		ZKUpdateUtil.setVflex(gridFooter, "0");
-
+		
 		//default paging size
 		if (ClientInfo.isMobile())
 		{
@@ -265,14 +267,14 @@ public class CustomQuickGridView extends Vbox
 			modeless = MSysConfig.getBooleanValue(MSysConfig.ZK_GRID_MOBILE_EDIT_MODELESS, false) && MSysConfig.getBooleanValue(MSysConfig.ZK_GRID_MOBILE_EDITABLE, false);
 		else
 			modeless = MSysConfig.getBooleanValue(MSysConfig.ZK_GRID_EDIT_MODELESS, true);
-
+		
 		appendChild(listbox);
-		appendChild(gridFooter);
+		appendChild(gridFooter);								
 		ZKUpdateUtil.setVflex(this, "true");
-
+		
 		setStyle(HEADER_GRID_STYLE);
 		gridFooter.setStyle(HEADER_GRID_STYLE);
-
+		
 		addEventListener(EVENT_ON_SELECT_ROW, this);
 		addEventListener(EVENT_ON_CUSTOMIZE_GRID, this);
 		addEventListener(EVENT_ON_PAGE_NAVIGATE, this);
@@ -307,7 +309,7 @@ public class CustomQuickGridView extends Vbox
 		listbox.setSclass("adtab-grid");
 		listbox.setEmptyMessage(Util.cleanAmp(Msg.getMsg(Env.getCtx(), "Processing")));
 	}
-
+	
 	/**
 	 * Init data grid
 	 * @param gridTab
@@ -318,7 +320,7 @@ public class CustomQuickGridView extends Vbox
 
 		if (this.gridTab != null)
 			this.gridTab.removeStateChangeListener(this);
-
+		
 		setupFields(gridTab);
 
 		setupColumns();
@@ -333,15 +335,15 @@ public class CustomQuickGridView extends Vbox
 	 * Setup {@link #gridFields} from gridTab.
 	 * @param gridTab
 	 */
-	private void setupFields(GridTab gridTab) {
-		this.gridTab = gridTab;
+	private void setupFields(GridTab gridTab) {		
+		this.gridTab = gridTab;		
 		gridTab.addStateChangeListener(this);
-
+		
 		tableModel = gridTab.getTableModel();
 		columnWidthMap = new HashMap<Integer, String>();
 		GridField[] modelFields = ((GridTable)tableModel).getFields();
 		MTabCustomization tabCustomization = MTabCustomization.get(Env.getCtx(), Env.getAD_User_ID(Env.getCtx()), gridTab.getAD_Tab_ID(), null, true);
-		isHasCustomizeData = tabCustomization != null && tabCustomization.getAD_Tab_Customization_ID() > 0
+		isHasCustomizeData = tabCustomization != null && tabCustomization.getAD_Tab_Customization_ID() > 0 
 				&& tabCustomization.getCustom() != null && tabCustomization.getCustom().trim().length() > 0;
 		if (isHasCustomizeData) {
 			String custom = tabCustomization.getCustom().trim();
@@ -402,21 +404,21 @@ public class CustomQuickGridView extends Vbox
 			}
 		} else {
 			ArrayList<GridField> gridFieldsList = new ArrayList<GridField>();
-
+			
 			for(GridField field:modelFields){
 				if (field.isQuickForm())
 				{
 					gridFieldsList.add(field);
 				}
 			}
-
+			
 			Collections.sort(gridFieldsList, new Comparator<GridField>() {
 				@Override
 				public int compare(GridField o1, GridField o2) {
 					return o1.getSeqNoGrid()-o2.getSeqNoGrid();
 				}
 			});
-
+			
 			gridFields = new GridField[gridFieldsList.size()];
 			gridFieldsList.toArray(gridFields);
 		}
@@ -446,7 +448,7 @@ public class CustomQuickGridView extends Vbox
 			refreshing = true;
 			listbox.setModel(listModel);
 			updateListIndex();
-			refreshing = false;
+			refreshing = false;			
 			if (gridTab.getRowCount() == 0 && selectAll.isChecked())
 				selectAll.setChecked(false);
 		}
@@ -465,8 +467,8 @@ public class CustomQuickGridView extends Vbox
 	public void updateListIndex() {
 		if (gridTab == null || !gridTab.isOpen()) return;
 
-		updateEmptyMessage();
-
+		updateEmptyMessage();		
+		
 		int rowIndex  = gridTab.getCurrentRow();
 		if (pageSize > 0) {
 			if (paging.getTotalSize() != gridTab.getRowCount())
@@ -506,7 +508,7 @@ public class CustomQuickGridView extends Vbox
 			if (rowIndex >= 0 && isNewLineSaved) {
 				echoOnPostSelectedRowChanged();
 			}
-		}
+		}		
 	}
 
 	/**
@@ -522,7 +524,7 @@ public class CustomQuickGridView extends Vbox
 	 */
 	private void showPagingControl() {
 		if (!gridFooter.isVisible())
-			gridFooter.setVisible(true);
+			gridFooter.setVisible(true);		
 	}
 
 	/**
@@ -560,7 +562,7 @@ public class CustomQuickGridView extends Vbox
 		if (init) return;
 
 		Columns columns = new Columns();
-
+		
 		//frozen not working well on tablet devices yet
 		if (!ClientInfo.isMobile())
 		{
@@ -569,7 +571,7 @@ public class CustomQuickGridView extends Vbox
 			frozen.setColumns(1);
 			listbox.appendChild(frozen);
 		}
-
+		
 		org.zkoss.zul.Column selection = new Column();
 		ZKUpdateUtil.setWidth(selection, "22px");
 		try{
@@ -589,7 +591,7 @@ public class CustomQuickGridView extends Vbox
 
 		Map<Integer, String> colnames = new HashMap<Integer, String>();
 		int index = 0;
-
+		
 		for (int i = 0; i < numColumns; i++)
 		{
 			// IDEMPIERE-2148: when has tab customize, ignore check properties isDisplayedGrid
@@ -598,7 +600,7 @@ public class CustomQuickGridView extends Vbox
 				colnames.put(index, gridFields[i].getHeader());
 				index++;
 				org.zkoss.zul.Column column = new Column();
-				int colindex =tableModel.findColumn(gridFields[i].getColumnName());
+				int colindex =tableModel.findColumn(gridFields[i].getColumnName()); 
 				column.setSortAscending(new SortComparator(colindex, true, Env.getLanguage(Env.getCtx())));
 				column.setSortDescending(new SortComparator(colindex, false, Env.getLanguage(Env.getCtx())));
 				column.addEventListener(Events.ON_SORT, this);
@@ -642,7 +644,7 @@ public class CustomQuickGridView extends Vbox
 						int headerWidth = (gridFields[i].getHeader().length() + 2) * 8;
 						if (headerWidth > estimatedWidth)
 							estimatedWidth = headerWidth;
-
+						
 						//hflex=min for first column not working well
 						if (i > 0)
 						{
@@ -662,7 +664,7 @@ public class CustomQuickGridView extends Vbox
 									ZKUpdateUtil.setHflex(column, "min");
 							}
 						}
-
+						
 						//set estimated width if not using hflex=min
 						if (!"min".equals(column.getHflex())) {
 							if (estimatedWidth > MAX_COLUMN_WIDTH)
@@ -684,7 +686,7 @@ public class CustomQuickGridView extends Vbox
 	private void render()
 	{
 		updateEmptyMessage();
-
+		
 		listbox.addEventListener(Events.ON_CLICK, this);
 
 		updateModel();
@@ -696,16 +698,16 @@ public class CustomQuickGridView extends Vbox
 			paging.setTotalSize(tableModel.getRowCount());
 			paging.setDetailed(true);
 			paging.setId("paging");
-			gridFooter.appendChild(paging);
+			gridFooter.appendChild(paging);			
 			paging.addEventListener(ZulEvents.ON_PAGING, this);
 			renderer.setPaging(paging);
-			showPagingControl();
+			showPagingControl();				
 			positionPagingControl();
 		}
 		else
 		{
 			hidePagingControl();
-		}
+		}		
 	}
 
 	/**
@@ -738,7 +740,7 @@ public class CustomQuickGridView extends Vbox
 			renderer.setPaging(paging);
 
 		listbox.setModel(listModel);
-		if (listbox.getRows() == null)
+		if (listbox.getRows() == null) 
 			listbox.appendChild(new Rows());
 		listbox.setRowRenderer(renderer);
 	}
@@ -1131,7 +1133,7 @@ public class CustomQuickGridView extends Vbox
 					// remove all pop-up dialog list box
 					String script = "$('.z-combobox-open').remove()";
 					Clients.response(new AuScript(script));
-
+					
 					int rowChangedIndex = gridTab.getTableModel().getRowChanged();
 					if (rowChangedIndex == row)
 					{
@@ -1155,7 +1157,7 @@ public class CustomQuickGridView extends Vbox
 		{
 			renderer.setCurrentCell(null);
 			renderer.setCurrentCell(0, 1, NAVIGATE_CODE);
-			renderer.getCurrentRow().setStyle(QuickGridTabRowRenderer.CURRENT_ROW_STYLE);
+			LayoutUtils.addSclass("current-row", renderer.getCurrentRow());
 		}
 		else if (event.getName().equals(EVENT_ON_CLICK_TO_NAVIGATE))
 		{
@@ -1164,8 +1166,7 @@ public class CustomQuickGridView extends Vbox
 
 			renderer.setCurrentCell(row, col, NAVIGATE_CODE);
 
-			Row currntRow = renderer.getCurrentRow();
-			currntRow.setStyle(QuickGridTabRowRenderer.CURRENT_ROW_STYLE);
+			LayoutUtils.addSclass("current-row", renderer.getCurrentRow());
 		}
 		else if (event.getName().equals(EVENT_ON_SET_FOCUS_TO_FIRST_CELL))
 		{
@@ -1295,7 +1296,7 @@ public class CustomQuickGridView extends Vbox
 	 * @param code cell navigation code
 	 * @param row
 	 * @param col 
-	 * @return true if save succesfully
+	 * @return true if save successful
 	 */
 	private boolean save(int code, int row, int col)
 	{
@@ -1346,7 +1347,7 @@ public class CustomQuickGridView extends Vbox
 	public void scrollToCurrentRow() {
 		onPostSelectedRowChanged();
 	}
-
+	
 	/**
 	 * @param row
 	 * @param index
@@ -1397,7 +1398,7 @@ public class CustomQuickGridView extends Vbox
         {
             return;
         }
-
+		
         //  Selective
         if (col > 0)
         {
@@ -1416,9 +1417,9 @@ public class CustomQuickGridView extends Vbox
 		List<WEditor> list = renderer.editorsListMap.get(renderer.getCurrentRow());
 		if (list != null)
 			dynamicDisplayEditors(noData, list); // all components
-
+        
         if (gridTab.getRowCount() == 0 && selectAll.isChecked())
-			selectAll.setChecked(false);
+			selectAll.setChecked(false);        
 	}
 
 	/**
@@ -1469,7 +1470,7 @@ public class CustomQuickGridView extends Vbox
 		}
 		renderer.readOnlyEditorsListMap.put(renderer.getCurrentRow(), readOnlyEditorsList);
 	}
-
+	
 	/**
 	 *
 	 * @param windowNo
@@ -1494,20 +1495,20 @@ public class CustomQuickGridView extends Vbox
 	public void reInit() {
 		listbox.getChildren().clear();
 		listbox.detach();
-
+		
 		if (paging != null) {
 			paging.detach();
 			paging = null;
 		}
-
+		
 		renderer = null;
 		init = false;
-
+		
 		Grid tmp = listbox;
 		createListbox();
 		tmp.copyEventListeners(listbox);
 		insertBefore(listbox, gridFooter);
-
+		
 		refresh(gridTab);
 		scrollToCurrentRow();
 		Clients.resize(listbox);
@@ -1521,7 +1522,7 @@ public class CustomQuickGridView extends Vbox
 	public GridField[] getFields() {
 		return gridFields;
 	}
-
+	
 	@Override
 	public void focusToFirstEditor() {
 	}
@@ -1593,7 +1594,7 @@ public class CustomQuickGridView extends Vbox
 	 */
 	public boolean dataSave(int code) {
 		boolean isSave = false;
-		//save only if new record modify
+		//save only if new record modify 
 		isSave = gridTab.dataSave(false);
 		if (isSave) {
 			isNewLineSaved = true;
@@ -1624,7 +1625,7 @@ public class CustomQuickGridView extends Vbox
 	public void onPageDetached(Page page)
 	{
 		super.onPageDetached(page);
-		keyListener.setCtrlKeys(keyListener.getCtrlKeys().replaceAll(CNTRL_KEYS, ""));
+		keyListener.setCtrlKeys(keyListener.getCtrlKeys().replace(CNTRL_KEYS, ""));
 		keyListener.removeEventListener(Events.ON_CTRL_KEY, this);
 	}
 

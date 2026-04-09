@@ -74,12 +74,15 @@ import org.zkoss.zk.ui.IdSpace;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.Events;
+import org.zkoss.zk.ui.event.OpenEvent;
 import org.zkoss.zk.ui.util.Clients;
 import org.zkoss.zul.Cell;
 import org.zkoss.zul.Center;
 import org.zkoss.zul.Column;
 import org.zkoss.zul.Div;
 import org.zkoss.zul.Frozen;
+import org.zkoss.zul.Menuitem;
+import org.zkoss.zul.Menupopup;
 import org.zkoss.zul.Paging;
 import org.zkoss.zul.Row;
 import org.zkoss.zul.Vlayout;
@@ -123,7 +126,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 
 	/** default paging size for mobile client when GridView is in header panel **/
 	private static final int DEFAULT_MOBILE_PAGE_SIZE = 20;
-
+	
 	/** default paging size when GridView is in header panel **/
 	private static final int DEFAULT_PAGE_SIZE = 20;
 
@@ -200,7 +203,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 
 	/** checkbox to select all row of current page **/
 	protected Checkbox selectAll;
-
+	
 	/** true if there are AD_Tab_Customization for GridTab **/
 	protected boolean isHasCustomizeData = false;
 
@@ -209,6 +212,8 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 
 	/** true if auto hide empty column feature is enable **/
 	private String m_isAutoHideEmptyColumn;
+
+	private Menupopup gridColumnMenuPopup;
 
 	/**
 	 * default constructor
@@ -228,10 +233,10 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 		createListbox();
 
 		ZKUpdateUtil.setHflex(this, "1");
-
+		
 		gridFooter = new Div();
 		ZKUpdateUtil.setVflex(gridFooter, "0");
-
+		
 		//default paging size
 		if (ClientInfo.isMobile())
 		{
@@ -249,39 +254,39 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 			if (limit == null || !(limit.equals(Integer.toString(pageSize)))) {
 				Library.setProperty(CustomGridDataLoader.GRID_DATA_LOADER_LIMIT, Integer.toString(pageSize));
 			}
-		}
-
+		}		
+		
 		//default true for better UI experience
 		if (ClientInfo.isMobile())
 			modeless = MSysConfig.getBooleanValue(MSysConfig.ZK_GRID_MOBILE_EDIT_MODELESS, false) && MSysConfig.getBooleanValue(MSysConfig.ZK_GRID_MOBILE_EDITABLE, false);
 		else
 			modeless = MSysConfig.getBooleanValue(MSysConfig.ZK_GRID_EDIT_MODELESS, true);
-
+		
 		appendChild(listbox);
-		appendChild(gridFooter);
+		appendChild(gridFooter);								
 		ZKUpdateUtil.setVflex(this, "true");
-
+		
 		setStyle(HEADER_GRID_STYLE);
 		gridFooter.setStyle(HEADER_GRID_STYLE);
-
+		
 		addEventListener("onSelectRow", this);
 		addEventListener("onCustomizeGrid", this);
 	}
 
 	/**
-	 * create data grid instances
+	 * Create data grid instances
 	 */
 	protected void createListbox() {
-		listbox = new Grid();
-		listbox.setSizedByContent(false);
+		listbox = new Grid();		
+		listbox.setSizedByContent(false);				
 		ZKUpdateUtil.setVflex(listbox, "1");
 		ZKUpdateUtil.setHflex(listbox, "1");
 		listbox.setSclass("adtab-grid");
 		listbox.setEmptyMessage(Util.cleanAmp(Msg.getMsg(Env.getCtx(), "Processing")));
 	}
-
+	
 	/**
-	 * turn on/off detail pane mode
+	 * Turn on/off detail pane mode
 	 * @param detailPaneMode
 	 * @param gridTab
 	 */
@@ -294,6 +299,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	}
 
 	/**
+	 * Get detail pane paging size for a GridTab 
 	 * @param gridTab
 	 * @return the number of records to be displayed in detail grid
 	 */
@@ -303,9 +309,9 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 		if (Util.isEmpty(pageDetailSizes, true)) {
 			return size;
 		}
-		/* Format of ZK_PAGING_DETAIL_SIZE is a list of components separated by ;
-		 * first component is the wide default
-		 * next components are exceptions defined as pair of tab:size - where tab can be AD_Tab_ID, AD_Tab_UU or AD_TableName
+		/** 
+		 * Format of ZK_PAGING_DETAIL_SIZE is a list of components separated by ;<br/>
+		 * Each component is either a number (page size) or a pair of tab:pageSize - where tab can be AD_Tab_ID, AD_Tab_UU or AD_TableName.
 		 */
 		for (String pageDetailSize : pageDetailSizes.split(";")) {
 			String[] parts = pageDetailSize.split(":");
@@ -345,12 +351,13 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	}
 
 	/**
+	 * Is in detail pane mode
 	 * @return true if it is in detail pane mode
 	 */
 	public boolean isDetailPaneMode() {
 		return this.detailPaneMode;
 	}
-
+	
 	/**
 	 * Update paging component with new paging size and notify model if paging size has change.
 	 */
@@ -376,22 +383,22 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 
 		if (this.gridTab != null)
 			this.gridTab.removeStateChangeListener(this);
-
+		
 		setupFields(gridTab);
 
 		setupColumns();
 		render();
-
+		
 		if (listbox.getFrozen() != null){
 			listbox.getFrozen().setWidgetOverride("syncScroll", "function (){idempiere.syncScrollFrozen(this);}");
 		}
-
+		
 		updateListIndex();
 
 		autoHideEmptyColumns();
 		
 		this.init = true;
-
+		
 		showRecordsCount();
 	}
 
@@ -406,24 +413,24 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 				if (p.getSelectedADTabpanel() != null && p.getSelectedADTabpanel().getGridTab() == this.gridTab)
 					p.setStatusMessage(tableModel.getRowCount() + " " + Msg.getMsg(Env.getCtx(), "Records"), false);
 				break;
-			}
-			parent = parent.getParent();
+			} 
+			parent = parent.getParent();					
 		}
 	}
-
+	
 	/**
 	 * Setup {@link #gridFields} from gridTab.
 	 * @param gridTab
 	 */
-	private void setupFields(GridTab gridTab) {
-		this.gridTab = gridTab;
+	private void setupFields(GridTab gridTab) {		
+		this.gridTab = gridTab;		
 		gridTab.addStateChangeListener(this);
-
+		
 		tableModel = gridTab.getTableModel();
 		columnWidthMap = new HashMap<Integer, String>();
 		GridField[] tmpFields = ((GridTable)tableModel).getFields();
 		MTabCustomization tabCustomization = MTabCustomization.get(Env.getCtx(), Env.getAD_User_ID(Env.getCtx()), gridTab.getAD_Tab_ID(), null);
-		isHasCustomizeData = tabCustomization != null && tabCustomization.getAD_Tab_Customization_ID() > 0
+		isHasCustomizeData = tabCustomization != null && tabCustomization.getAD_Tab_Customization_ID() > 0 
 				&& tabCustomization.getCustom() != null && tabCustomization.getCustom().trim().length() > 0;
 		if (isHasCustomizeData) {
 			String custom = tabCustomization.getCustom().trim();
@@ -439,7 +446,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 						// IDEMPIERE-2204 add field in tabCustomization list to display list event this field have showInGrid = false
 						if((gridField.isDisplayedGrid() || gridField.isDisplayed()) && !gridField.isToolbarOnlyButton())
 							fieldList.add(gridField);
-
+						
 						break;
 					}
 				}
@@ -454,7 +461,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 			m_isAutoHideEmptyColumn = tabCustomization.getIsAutoHideEmptyColumn();
 		} else {
 			ArrayList<GridField> gridFieldList = new ArrayList<GridField>();
-
+			
 			//limit number of columns on mobile for better performance
 			int max = 0;
 			if (ClientInfo.isMobile())
@@ -466,14 +473,14 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 				if (max > 0 && gridFieldList.size() >= max)
 					break;
 			}
-
+			
 			Collections.sort(gridFieldList, new Comparator<GridField>() {
 				@Override
 				public int compare(GridField o1, GridField o2) {
 					return o1.getSeqNoGrid()-o2.getSeqNoGrid();
 				}
 			});
-
+			
 			gridFields = new GridField[gridFieldList.size()];
 			gridFieldList.toArray(gridFields);
 		}
@@ -481,7 +488,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	}
 
 	/**
-	 *
+	 * Is data grid have been init with GridTab
 	 * @return true if data grid have been init with GridTab
 	 */
 	public boolean isInit() {
@@ -517,13 +524,14 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 			refreshing = true;
 			listbox.setModel(listModel);
 			updateListIndex();
-			refreshing = false;
+			refreshing = false;			
 			if (gridTab.getRowCount() == 0 && selectAll.isChecked())
 				selectAll.setChecked(false);
 		}
 	}
 
 	/**
+	 * Is data grid in the process of refreshing data from GridTab
 	 * @return true if data grid is refreshing data from GridTab
 	 */
 	public boolean isRefreshing() {
@@ -536,8 +544,8 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	public void updateListIndex() {
 		if (gridTab == null || !gridTab.isOpen()) return;
 
-		updateEmptyMessage();
-
+		updateEmptyMessage();		
+		
 		int rowIndex  = gridTab.getCurrentRow();
 		if (pageSize > 0) {
 			if (paging.getTotalSize() != gridTab.getRowCount())
@@ -584,11 +592,11 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 			if (rowIndex >= 0) {
 				echoOnPostSelectedRowChanged();
 			}
-		}
+		}		
 	}
 
 	/**
-	 * hide paging component
+	 * Hide paging component
 	 */
 	private void hidePagingControl() {
 		if (gridFooter.isVisible())
@@ -596,15 +604,15 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	}
 
 	/**
-	 * show paging component
+	 * Show paging component
 	 */
 	private void showPagingControl() {
 		if (!gridFooter.isVisible())
-			gridFooter.setVisible(true);
+			gridFooter.setVisible(true);		
 	}
 
 	/**
-	 * echo ON_POST_SELECTED_ROW_CHANGED_EVENT after current row index has changed
+	 * Echo ON_POST_SELECTED_ROW_CHANGED_EVENT after current row index has changed
 	 */
 	protected void echoOnPostSelectedRowChanged() {
 		if (getAttribute(ATTR_ON_POST_SELECTED_ROW_CHANGED) == null) {
@@ -630,6 +638,44 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 		this.getChildren().clear();
 	}
 
+	// value of attribute to identify freeze menu item
+	public static final String ATTR_VALUE_MENU_ITEM_FROZEN = "Frozen";
+	public static final String MENU_ITEM_FROZEN_LABEL = "FrozenColumnContextMenuLabel";
+	// value of attribute to identify reset freeze menu item
+	public static final String ATTR_VALUE_MENU_ITEM_RESET_FROZEN = "Reset Frozen";
+	public static final String MENU_ITEM_RESET_FROZEN_LABEL = "ResetFrozenColumnContextMenuLabel";
+	// name of attribute to store reference to column doing right click contextMenuColumn
+	public static final String ATTR_NAME_CONTEXT_MENU_COLUMN = "contextMenuColumn";
+	// name of attribute to store reference to menu popup
+	public static final String ATTR_NAME_GRID_VIEW_CONTEXT_MENU_POPUP = "gridViewContextMenuPopup";
+	
+	/**
+	 * Event listener for context menu on grid header<br/>
+	 * Freeze the current column when click "frozen" column and reset to default column when click "reset frozen"
+	 */
+	public static final EventListener<? extends Event> listener = event -> {
+		Menuitem menuItem = (Menuitem)event.getTarget();
+		Menupopup menupopup = (Menupopup)menuItem.getParent();
+		
+		// get refers to the column set when handling the onOpen event of MenuPopop
+		org.zkoss.zul.Column contextMenuColumn = (org.zkoss.zul.Column)menupopup.getAttribute(CustomGridView.ATTR_NAME_CONTEXT_MENU_COLUMN);
+		org.zkoss.zul.Grid grid = contextMenuColumn.getGrid();
+		
+		// calculate frozen up to click menu
+		int frozenColumns = -1;
+		Object valueIdentifyMenuItem = menuItem.getValue();
+		if (CustomGridView.ATTR_VALUE_MENU_ITEM_FROZEN.equals(valueIdentifyMenuItem)) {// freeze column menu
+			frozenColumns = grid.getColumns().getChildren().indexOf(contextMenuColumn) + 1;
+		}else if (CustomGridView.ATTR_VALUE_MENU_ITEM_RESET_FROZEN.equals(valueIdentifyMenuItem)) {// reset freeze menu
+			frozenColumns = 2;
+		}
+		
+		Frozen frozen = grid.getFrozen();
+		if (frozenColumns != -1 && frozen != null) {
+			frozen.setColumns(frozenColumns);
+		}
+	};
+	
 	/**
 	 * Setup {@link Columns} of data grid
 	 */
@@ -638,7 +684,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 		if (init) return;
 
 		Columns columns = new Columns();
-
+		
 		//frozen not working well on tablet devices yet
 		//unlikely to be fixed since the working 'smooth scrolling frozen' is a zk ee only feature
 		if (!ClientInfo.isMobile())
@@ -648,7 +694,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 			frozen.setColumns(2);
 			listbox.appendChild(frozen);
 		}
-
+				
 		org.zkoss.zul.Column selection = new Column();
 		selection.setHeight("2em");
 		ZKUpdateUtil.setWidth(selection, "22px");
@@ -661,10 +707,10 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 		selectAll.setId("selectAll");
 		selectAll.addEventListener(Events.ON_CHECK, this);
 		columns.appendChild(selection);
-
+		
 		if (ClientInfo.isMobile())
 			showCurrentRowIndicatorColumn = MSysConfig.getBooleanValue(MSysConfig.ZK_GRID_MOBILE_SHOW_CURRENT_ROW_INDICATOR, false);
-
+		
 		if (showCurrentRowIndicatorColumn)
 		{
 			org.zkoss.zul.Column indicator = new Column();
@@ -676,15 +722,43 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 			indicator.setStyle("border-left: none");
 			columns.appendChild(indicator);
 		}
-
+		
 		listbox.appendChild(columns);
 		columns.setSizable(true);
-		columns.setMenupopup("none");
 		columns.setColumnsgroup(false);
 
+		if (gridColumnMenuPopup != null && gridColumnMenuPopup.getParent() != null)
+			gridColumnMenuPopup.detach();
+		gridColumnMenuPopup = new Menupopup();
+		appendChild(gridColumnMenuPopup);
+		
+		// handle onOpen event to store column to attribute
+		gridColumnMenuPopup.addEventListener(Events.ON_OPEN, event -> {
+			OpenEvent openEvent = (OpenEvent)event;
+			if (openEvent.isOpen()) {
+				openEvent.getTarget().setAttribute(CustomGridView.ATTR_NAME_CONTEXT_MENU_COLUMN, openEvent.getReference());
+			}else {
+				openEvent.getTarget().removeAttribute(CustomGridView.ATTR_NAME_CONTEXT_MENU_COLUMN);
+			}
+		});
+		
+		// setup freeze column menu
+		Menuitem frozenMenuItem = new Menuitem(Msg.getMsg(Env.getCtx(), MENU_ITEM_FROZEN_LABEL, true));
+		frozenMenuItem.setValue(ATTR_VALUE_MENU_ITEM_FROZEN);
+		frozenMenuItem.setIconSclass("z-icon-lock");
+		frozenMenuItem.addEventListener(Events.ON_CLICK, CustomGridView.listener);
+		gridColumnMenuPopup.appendChild(frozenMenuItem);
+		
+		// setup reset freeze column menu
+		Menuitem resetFrozenMenuItem = new Menuitem(Msg.getMsg(Env.getCtx(), MENU_ITEM_RESET_FROZEN_LABEL, true));
+		resetFrozenMenuItem.setValue(ATTR_VALUE_MENU_ITEM_RESET_FROZEN);
+		resetFrozenMenuItem.setIconSclass("z-icon-mail-reply");
+		resetFrozenMenuItem.addEventListener(Events.ON_CLICK, CustomGridView.listener);
+		gridColumnMenuPopup.appendChild(resetFrozenMenuItem);
+		
 		Map<Integer, String> colnames = new HashMap<Integer, String>();
 		int index = 0;
-
+		
 		for (int i = 0; i < numColumns; i++)
 		{
 			// IDEMPIERE-2148: when has tab customize, ignore check properties isDisplayedGrid
@@ -733,11 +807,11 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 							estimatedWidth = gridFields[i].getDisplayLength() * 8;
 						else
 							estimatedWidth = MIN_COLUMN_WIDTH;
-
+					
 						int headerWidth = (gridFields[i].getHeader().length()+2) * 8;
 						if (headerWidth > estimatedWidth)
 							estimatedWidth = headerWidth;
-
+						
 						//hflex=min for first column not working well
 						if (i > 0 && !ClientInfo.isMobile())
 						{
@@ -757,7 +831,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 									ZKUpdateUtil.setHflex(column, "min");
 							}
 						}
-
+						
 						//set estimated width if not using hflex=min
 						if (!"min".equals(column.getHflex())) {
 							if (ClientInfo.isMobile() && ClientInfo.get() != null &&
@@ -771,15 +845,16 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 								if (estimatedWidth > MAX_COLUMN_WIDTH)
 									estimatedWidth = MAX_COLUMN_WIDTH;
 								else if ( estimatedWidth < MIN_COLUMN_WIDTH)
-									estimatedWidth = MIN_COLUMN_WIDTH;
+									estimatedWidth = MIN_COLUMN_WIDTH;								
 							}
 							ZKUpdateUtil.setWidth(column, Integer.toString(estimatedWidth) + "px");
 						}
 					}
-				}
+				} 
 				columns.appendChild(column);
+				column.setContext(gridColumnMenuPopup);
 			}
-		}
+		}		
 	}
 
 	/**
@@ -788,7 +863,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	private void render()
 	{
 		updateEmptyMessage();
-
+		
 		listbox.addEventListener(Events.ON_CLICK, this);
 
 		updateModel();
@@ -800,21 +875,21 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 			paging.setTotalSize(tableModel.getRowCount());
 			paging.setDetailed(true);
 			paging.setId("paging");
-			gridFooter.appendChild(paging);
+			gridFooter.appendChild(paging);			
 			paging.addEventListener(ZulEvents.ON_PAGING, this);
 			renderer.setPaging(paging);
 			if (paging.getPageCount() == 1) {
 				hidePagingControl();
 			} else {
-				showPagingControl();
-			}
+				showPagingControl();				
+			}						
 			positionPagingControl();
 		}
 		else
 		{
 			hidePagingControl();
-		}
-
+		}		
+		
 	}
 
 	/**
@@ -905,13 +980,18 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	}
 
 	/**
+	 * Is auto hide empty columns
 	 * @return if auto hide empty columns feature have been turned on
 	 */
 	private boolean isAutoHideEmptyColumns() {
-		if (!Util.isEmpty(m_isAutoHideEmptyColumn, true)) 
+		if (!Util.isEmpty(m_isAutoHideEmptyColumn, true)) {
 			return "Y".equalsIgnoreCase(m_isAutoHideEmptyColumn);
-		else
-			return MSysConfig.getBooleanValue(MSysConfig.ZK_GRID_AUTO_HIDE_EMPTY_COLUMNS, false, Env.getAD_Client_ID(Env.getCtx()));
+		} else {
+			if (ClientInfo.isMobile())
+				return MSysConfig.getBooleanValue(MSysConfig.ZK_GRID_MOBILE_AUTO_HIDE_EMPTY_COLUMNS, true, Env.getAD_Client_ID(Env.getCtx()));
+			else
+				return MSysConfig.getBooleanValue(MSysConfig.ZK_GRID_AUTO_HIDE_EMPTY_COLUMNS, false, Env.getAD_Client_ID(Env.getCtx()));
+		}
 	}
 
 	/**
@@ -929,7 +1009,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	}
 
 	/**
-	 * Update {@link #listModel} with {@link #tableModel} changes.
+	 * Update {@link #listModel} with {@link #tableModel} changes.<br/>
 	 * Re-create {@link #renderer}. 
 	 */
 	private void updateModel() {
@@ -946,7 +1026,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 			renderer.setPaging(paging);
 
 		listbox.setModel(listModel);
-		if (listbox.getRows() == null)
+		if (listbox.getRows() == null) 
 			listbox.appendChild(new Rows());
 		listbox.setRowRenderer(renderer);
 	}
@@ -984,7 +1064,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 				}
 			}
 			if (row != null)
-			{
+			{				
 				if (row == renderer.getCurrentRow())
 				{
 					//click on selected row to enter edit mode
@@ -1027,7 +1107,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 		else if (event.getName().equals("onSelectRow"))
 		{
 			Checkbox checkbox = (Checkbox) event.getData();
-			int rowIndex = (Integer) checkbox.getAttribute(GridTabRowRenderer.GRID_ROW_INDEX_ATTR);
+			int rowIndex = (Integer) checkbox.getAttribute(GridTabRowRenderer.GRID_ROW_INDEX_ATTR);			
 			if (checkbox.isChecked())
 			{
 				gridTab.addToSelection(rowIndex);
@@ -1050,6 +1130,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	}
 
 	/**
+	 * Find nearest Center component that own this GridView.
 	 * @param gridView
 	 * @return {@link Center} that own this GridView instance
 	 */
@@ -1064,8 +1145,9 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 		}
 		return null;
 	}
-
+	
 	/**
+	 * Is all row of current page is selected
 	 * @return true if all row of current page is selected
 	 */
 	private boolean isAllSelected() {
@@ -1090,7 +1172,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	}
 
 	/**
-	 * turn on/off select all rows for current page
+	 * Turn on/off select all rows for current page
 	 * @param b
 	 */
 	private void toggleSelectionForAll(boolean b) {
@@ -1111,7 +1193,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 				else
 					gridTab.removeFromSelection(rowIndex);
 			}
-		}
+		}		
 	}
 
 	/**
@@ -1196,7 +1278,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 				break;
 			}
 			parent = parent.getParent();
-		}
+		}					
 		if (adtabpanel != null)
 		{
 			CustomADWindow adwindow = CustomADWindow.findADWindow(adtabpanel);
@@ -1215,14 +1297,14 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	}
 
 	/**
-	 * scroll grid to the current focus row
+	 * Scroll grid to the current focus row
 	 */
 	public void scrollToCurrentRow() {
 		onPostSelectedRowChanged();
 	}
-
+	
 	/**
-	 * Focus to row.
+	 * Focus to row.<br/>
 	 * If it is in edit mode, assume row is the current editing row. 
 	 * @param row
 	 */
@@ -1267,6 +1349,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	}
 
 	/**
+	 * Is row have been rendered by row renderer
 	 * @param row
 	 * @param index
 	 * @return true if row have been rendered by row renderer
@@ -1306,7 +1389,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 				});
 				return retValue[0];
 			}
-
+			
 			gridTab.navigate(rowIndex);
 			return true;
 		}
@@ -1329,7 +1412,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
         {
             return;
         }
-
+		
 		if (renderer.getEditors().isEmpty())
 			listbox.onInitRender();
 
@@ -1345,14 +1428,14 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
                 return;
             }
         }
-
+        	
 
         boolean noData = gridTab.getRowCount() == 0;
         List<WEditor> list =  renderer.getEditors();
         dynamicDisplayEditors(noData, list);   //  all components
-
+        
         if (gridTab.getRowCount() == 0 && selectAll.isChecked())
-			selectAll.setChecked(false);
+			selectAll.setChecked(false);        
 	}
 
 	/**
@@ -1366,9 +1449,9 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
             GridField mField = comp.getGridField();
             if (mField != null)
             {
-            	Properties ctx = isDetailPane() ? new GridRowCtx(Env.getCtx(), gridTab)
+            	Properties ctx = isDetailPane() ? new GridRowCtx(Env.getCtx(), gridTab) 
                 		: mField.getVO().ctx;
-
+            	
                 if (noData)
                 {
                     comp.setReadWrite(false);
@@ -1382,13 +1465,14 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
                     comp.setMandatory(mField.isMandatory(true));    //  check context
                 	comp.dynamicDisplay(ctx);
                 }
-
+                
                 comp.setVisible((isHasCustomizeData || mField.isDisplayedGrid()) && mField.isDisplayed(ctx, true));
             }
         }
 	}
 
 	/**
+	 * Is this GridView instance own by DetailPane
 	 * @return true if this GridView instance is own by DetailPane 
 	 */
 	private boolean isDetailPane() {
@@ -1396,14 +1480,14 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 		while (parent != null) {
 			if (parent instanceof CustomDetailPane) {
 				return true;
-			}
-			parent = parent.getParent();
+			} 
+			parent = parent.getParent();					
 		}
 		return false;
 	}
-
+	
 	/**
-	 *
+	 * Set window no
 	 * @param windowNo
 	 */
 	public void setWindowNo(int windowNo) {
@@ -1433,6 +1517,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	}
 
 	/**
+	 * Set focus to field
 	 * @param columnName
 	 */
 	public void setFocusToField(String columnName) {
@@ -1466,27 +1551,27 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	public void reInit() {
 		listbox.getChildren().clear();
 		listbox.detach();
-
+		
 		if (paging != null) {
 			paging.detach();
 			paging = null;
 		}
-
+		
 		renderer = null;
 		init = false;
-
+		
 		Grid tmp = listbox;
 		createListbox();
 		tmp.copyEventListeners(listbox);
 		insertBefore(listbox, gridFooter);
-
+		
 		refresh(gridTab);
 		scrollToCurrentRow();
 		invalidateGridView();
 	}
 
 	/**
-	 * redraw grid view
+	 * Redraw grid view
 	 */
 	public void invalidateGridView() {
 		Center center = findCenter(this);
@@ -1497,21 +1582,21 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 	}
 
 	/**
-	 * list field display in grid mode, in case user customize grid
+	 * List of field display in grid mode. If there is grid customization record.
 	 * this list container only customize list.
 	 * @return GridField[]
 	 */
 	public GridField[] getFields() {
 		return gridFields;
 	}
-
+	
 	/**
-	 * call {@link #onEditCurrentRow(Event)}
+	 * Call {@link #onEditCurrentRow(Event)}
 	 */
 	public void onEditCurrentRow() {
 		onEditCurrentRow(null);
 	}
-
+	
 	/**
 	 * Edit current row
 	 * @param event
@@ -1527,7 +1612,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 				renderer.editCurrentRow();
 				renderer.focusToFirstEditor();
 			}
-		}
+		} 
 	}
 
 	/**
@@ -1566,7 +1651,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 
 	/**
 	 * Parent component change notification from ADTabpanel that own this GridView instance (Usually
-	 * after movement between Header and DetailPane panel).
+	 * after movement between Header and DetailPane panel).<br/>
 	 * Re-position paging component.
 	 */
 	protected void onADTabPanelParentChanged() {
@@ -1590,7 +1675,7 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 			if (paging != null)
 				paging.setDetailed(false);
 		}
-		else
+		else 
 		{
 			if (gridFooter.getParent() != this) {
 				ZKUpdateUtil.setHflex(gridFooter, "1");
@@ -1598,19 +1683,19 @@ public class CustomGridView extends Vlayout implements EventListener<Event>, IdS
 				appendChild(gridFooter);
 			}
 			if (paging != null)
-				paging.setDetailed(true);
+				paging.setDetailed(true);			
 		}
 	}
 
 	/**
-	 * call editorTaverseCallback for all field editors.
+	 * Call editorTaverseCallback for all field editors.
 	 */
 	@Override
 	public void editorTraverse(Callback<WEditor> editorTaverseCallback) {
 		editorTraverse(editorTaverseCallback, renderer.getEditors());
-
+		
 	}
-
+	
 	/**
 	 * @return true if current row indicator column is visible.
 	 */

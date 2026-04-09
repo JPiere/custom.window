@@ -55,10 +55,11 @@ public class CustomLabelsPanel extends Div implements EventListener<Event> {
 	/**
 	 * generated serial id
 	 */
-	private static final long serialVersionUID = 2232899183255702050L;
+	private static final long serialVersionUID = 8776043844483214400L;
+
 	private CustomAbstractADWindowContent abstractADWindowContent;
 	private int AD_Table_ID;
-	private int Record_ID;	
+	private int Record_ID;
 	private String Record_UU;
 	
 	/**
@@ -132,6 +133,9 @@ public class CustomLabelsPanel extends Div implements EventListener<Event> {
 		}
 	}
 	
+	/**
+	 * Re-render with latest data from AD_LabelAssignment
+	 */
 	private void update() {
 		// Clear children
 		List<Component> children = new ArrayList<Component>(getChildren());
@@ -159,6 +163,9 @@ public class CustomLabelsPanel extends Div implements EventListener<Event> {
 		abstractADWindowContent.getToolbar().setPressed("Label",abstractADWindowContent.getActiveGridTab().hasLabel());
 	}
 	
+	/**
+	 * Pill shape label component
+	 */
 	private class LabelPill extends Groupbox {
 		private static final long serialVersionUID = -2248242199670448950L;
 		

@@ -51,7 +51,6 @@ import org.compiere.util.CLogger;
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.Page;
 import org.zkoss.zk.ui.event.Event;
-import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.event.KeyEvent;
 import org.zkoss.zul.Div;
@@ -59,15 +58,11 @@ import org.zkoss.zul.Tab;
 import org.zkoss.zul.Vlayout;
 
 /**
- * Content area of {@link ADWindow}.
- *
+ * Controller for {@link ADWindow} content.
+ * 
  * @author <a href="mailto:agramdass@gmail.com">Ashley G Ramdass</a>
  * @author <a href="mailto:hengsin@gmail.com">Low Heng Sin</a>
  * @date Feb 25, 2007
- * @version $Revision: 0.10 $
- *
- * @author Hideaki Hagiwara（h.hagiwara@oss-erp.co.jp）
- *
  */
 public class CustomADWindowContent extends CustomAbstractADWindowContent
 {
@@ -90,7 +85,7 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
     }
 
 	/**
-	 * Layout UI.
+	 * Layout UI.<br/>
 	 * Vertical layout of toolbar, breadCrumb, statusBar and {@link #contentArea}.
 	 */
 	@Override
@@ -107,7 +102,7 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
 
         //toolbar
         Div north = new Div();
-        north.setParent(layout);
+        north.setParent(layout);        
         north.setSclass("adwindow-north");
         Div div = new Div();
         div.setStyle("height: 100%; width: 100%");
@@ -119,7 +114,7 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
         breadCrumb.setToolbarListener(this);
         breadCrumb.setId("breadCrumb");
         div.appendChild(breadCrumb);
-
+        
         //status bar
         div.appendChild(statusBar);
 
@@ -132,16 +127,16 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
         ZKUpdateUtil.setHflex(contentArea, "1");
         contentArea.setStyle("overflow: auto;");
         adTabbox.createPart(contentArea);
-
+        
         if (parent instanceof Tabpanel) {
         	TabOnCloseHanlder handler = new TabOnCloseHanlder();
         	((Tabpanel)parent).setOnCloseHandler(handler);
         }
 
         SessionManager.getSessionApplication().getKeylistener().addEventListener(Events.ON_CTRL_KEY, this);
-
+        
         layout.addEventListener(WindowContainer.ON_WINDOW_CONTAINER_SELECTION_CHANGED_EVENT, this);
-
+        
         return layout;
     }
 
@@ -164,10 +159,6 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
 		return layout;
 	}
 
-	/**
-     * @param event
-     * @see EventListener#onEvent(Event)
-     */
 	@Override
     public void onEvent(Event event) {
     	if (Events.ON_CTRL_KEY.equals(event.getName())) {
@@ -202,12 +193,12 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
 		@Override
 		public void onCallback(Boolean result) {
 			if (result){
-				closeTab (tabPanel);
-			}
+				closeTab (tabPanel);			
+			} 
 			this.tabPanel = null;
 		}
 	}
-
+	
 	/**
 	 * Close tab related to tabPanel
 	 * @param tabPanel Tabpanel that represent AD_Window
@@ -218,7 +209,7 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
 		if (getWindowNo() > 0)
 			SessionManager.getAppDesktop().unregisterWindow(getWindowNo());
 	}
-
+	
 	/**
 	 * Vlayout subclass to override onPageDetached. 
 	 */
@@ -250,5 +241,5 @@ public class CustomADWindowContent extends CustomAbstractADWindowContent
 	@Override
 	protected void switchEditStatus(boolean editStatus) {
 		layout.setWidgetOverride("isEditting", "'" + String.valueOf(editStatus) + "'");
-	}
+	}	
 }

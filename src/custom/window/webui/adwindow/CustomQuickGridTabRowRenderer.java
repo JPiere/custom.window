@@ -78,7 +78,7 @@ import org.zkoss.zul.Timebox;
 
 /**
  * Row renderer for Quick GridTab grid (Base on {@link GridTabRowRenderer})
- *
+ * 
  * @author Logilite Technologies
  * @since Nov 03, 2017
  */
@@ -113,7 +113,7 @@ public class CustomQuickGridTabRowRenderer
 	private Row currentRow;
 	/** values of current row. updated in {@link #render(Row, Object[], int)}. **/
 	private Object[] currentValues;
-	/** true if currrent row is in edit mode **/
+	/** true if current row is in edit mode **/
 	private boolean editing = false;
 	public int currentRowIndex = -1;
 	/** AD window content part that own this renderer **/
@@ -135,7 +135,6 @@ public class CustomQuickGridTabRowRenderer
 	private String						sortOrder;
 
 	/**
-	 *
 	 * @param gridTab
 	 * @param windowNo
 	 */
@@ -190,6 +189,7 @@ public class CustomQuickGridTabRowRenderer
 	}
 
 	/**
+	 * Get column index
 	 * @param field
 	 * @return column index for field, -1 if not found
 	 */
@@ -203,6 +203,7 @@ public class CustomQuickGridTabRowRenderer
 	}
 
 	/**
+	 * Set paging component
 	 * @param paging
 	 */
 	public void setPaging(Paging paging) {
@@ -221,7 +222,7 @@ public class CustomQuickGridTabRowRenderer
 		int columnCount = 0;
 		GridField[] gridPanelFields = null;
 		GridField[] gridTabFields = null;
-
+		
 		if (gridPanel != null) {
 			if (!gridPanel.isVisible()) {
 				return;
@@ -231,15 +232,15 @@ public class CustomQuickGridTabRowRenderer
 				columnCount = gridPanelFields.length;
 				gridTabFields = gridTab.getFields();
 				isGridViewCustomized = gridTabFields.length != gridPanelFields.length;
-			}
+			}	
 		}
-
+		
 		if (grid == null)
 			grid = (Grid) row.getParent().getParent();
 
 		if (rowListener == null)
 			rowListener = new RowListener((Grid)row.getParent().getParent());
-
+		
 		if (!isGridViewCustomized) {
 			for(int i = 0; i < gridTabFields.length; i++) {
 				if (gridPanelFields[i].getAD_Field_ID() != gridTabFields[i].getAD_Field_ID()) {
@@ -265,8 +266,8 @@ public class CustomQuickGridTabRowRenderer
 			}
 			currentValues = dataList.toArray(new Object[0]);
 		}
-
-
+		
+		
 		Grid grid = (Grid) row.getParent().getParent();
 		org.zkoss.zul.Columns columns = grid.getColumns();
 
@@ -282,16 +283,16 @@ public class CustomQuickGridTabRowRenderer
 		selection.setChecked(gridTab.isSelected(rowIndex));
 		cell.setStyle("border: none;");
 		selection.addEventListener(Events.ON_CHECK, this);
-
+		
 		if (!selection.isChecked()) {
 			if (gridPanel.selectAll.isChecked()) {
 				gridPanel.selectAll.setChecked(false);
 			}
 		}
-
+		
 		cell.appendChild(selection);
 		row.appendChild(cell);
-
+		
 		Boolean isActive = null;
 		int colIndex = -1;
 		// Editors List of Current Rendered Row
@@ -311,7 +312,7 @@ public class CustomQuickGridTabRowRenderer
 					}
 				}
 			}
-
+			
 			// IDEMPIERE-2148: when has tab customize, ignore check properties isDisplayedGrid
 			if ((!isGridViewCustomized && gridPanelFields[i].isDisplayedGrid()) || gridPanelFields[i].isToolbarOnlyButton()) {
 				continue;
@@ -357,12 +358,12 @@ public class CustomQuickGridTabRowRenderer
 				{
 					readOnlyEditorsList.add(componentEditor);
 				}
-
+				
 				GridRowCtx ctx = new GridRowCtx(Env.getCtx(), gridTab, rowIndex);
 				// Enable or Disable Component
 				componentEditor.setReadWrite(gridPanelFields[i].isEditable(ctx, true, false));
 				if (!gridPanelFields[i].isDisplayed(ctx, true)){
-					// IDEMPIERE-2253
+					// IDEMPIERE-2253 
 					component.setVisible(false);
 				}
 			}
@@ -370,7 +371,7 @@ public class CustomQuickGridTabRowRenderer
 			ZKUpdateUtil.setWidth(div, "100%");
 			div.setAttribute("columnName", gridPanelFields[i].getColumnName());
 			div.addEventListener(Events.ON_CLICK, rowListener);
-			div.addEventListener(Events.ON_DOUBLE_CLICK, rowListener);
+			div.addEventListener(Events.ON_DOUBLE_CLICK, rowListener);						
 			editing = true;
 			GridTableListModel model = (GridTableListModel) grid.getModel();
 			model.setEditing(true);
@@ -383,16 +384,16 @@ public class CustomQuickGridTabRowRenderer
 		if (rowIndex == gridTab.getCurrentRow()) {
 			setCurrentRow(row);
 		}
-
+		
 		row.setStyle("cursor:pointer");
 		row.addEventListener(Events.ON_CLICK, rowListener);
 		row.addEventListener(Events.ON_OK, rowListener);
 		row.setTooltiptext("Row " + (rowIndex+1));
-
+		
 		if (isActive == null) {
 			Object isActiveValue = gridTab.getValue(rowIndex, "IsActive");
 			if (isActiveValue != null) {
-				if ("true".equalsIgnoreCase(isActiveValue.toString())) {
+				if ("true".equalsIgnoreCase(isActiveValue.toString())) {							
 					isActive = Boolean.TRUE;
 				} else {
 					isActive = Boolean.FALSE;
@@ -435,11 +436,11 @@ public class CustomQuickGridTabRowRenderer
 	}
 
 	/**
-	 * Disable Read-only components for while pressing tab button focus goes to
-	 * read-only component.
-	 * Enable Read-only component before display Logic update.
-	 * Add/Remove CSS Class from read-only component
-	 *
+	 * Disable Read-only components while pressing tab button and focus can goes to
+	 * read-only component.<br/>
+	 * Set component to Read-only before display Logic update.<br/>
+	 * Add/Remove CSS Class from read-only component.
+	 * 
 	 * @param component
 	 * @param isDisable
 	 * @return true if component is read only
@@ -578,7 +579,7 @@ public class CustomQuickGridTabRowRenderer
 
 	/**
 	 * Add/Remove CSS class from Read-only Component
-	 *
+	 * 
 	 * @param zclass
 	 * @param isDisable
 	 * @return modify zclass
@@ -594,7 +595,7 @@ public class CustomQuickGridTabRowRenderer
 		else
 		{
 			if (zclass.contains(CSS_READ_ONLY_COMPONENT))
-				zclass.replaceAll(CSS_READ_ONLY_COMPONENT, "");
+				zclass.replace(CSS_READ_ONLY_COMPONENT, "");
 		}
 		return zclass;
 	}
@@ -676,21 +677,19 @@ public class CustomQuickGridTabRowRenderer
 		}
 
 		int pgIndex = row >= 0 ? row % paging.getPageSize() : 0;
-		if (row != currentRowIndex || pgIndex != currentRowIndex) {
-			if (currentRow != null)
-				currentRow.setStyle(null);
-			if (grid.getRows().getChildren().size() <= 0) {
-				currentCell = null;
-				return;
-			}
-			gridTab.setCurrentRow(pgIndex + paging.getActivePage() * paging.getPageSize());
-			currentRow = ((Row) grid.getRows().getChildren().get(pgIndex));
-			currentRowIndex = gridTab.getCurrentRow();
-			currentRow.setStyle(CURRENT_ROW_STYLE);
+		if (currentRow != null)
+			LayoutUtils.removeSclass("current-row", currentRow);
+		if (grid.getRows().getChildren().size() <= 0) {
+			currentCell = null;
+			return;
 		}
-
+		gridTab.setCurrentRow(pgIndex + paging.getActivePage() * paging.getPageSize());
+		currentRow = ((Row) grid.getRows().getChildren().get(pgIndex));
+		currentRowIndex = gridTab.getCurrentRow();
+		LayoutUtils.addSclass("current-row", currentRow);
+		
 		setCurrentRow(currentRow);
-
+		
 		if (isAddRemoveListener(code))
 		{
 			// Add property change listener to new current row
@@ -702,12 +701,12 @@ public class CustomQuickGridTabRowRenderer
 		}
 		if (currentCell != null && code != QuickGridView.FOCUS_CODE) {
 			setFocusOnCurrentCell();
-		}
+		} 
 	}
 
 	/**
 	 * Add property change listener (WEditor) to GridField
-	 *
+	 * 
 	 * @param editorsList
 	 */
 	private void addEditorPropertyChangeListener(ArrayList<WEditor> editorsList)
@@ -723,7 +722,7 @@ public class CustomQuickGridTabRowRenderer
 
 	/**
 	 * Remove property change listener (WEditor) from GridField
-	 *
+	 * 
 	 * @param editorsList
 	 */
 	private void removeEditorPropertyChangeListener(ArrayList<WEditor> editorsList)
@@ -735,12 +734,12 @@ public class CustomQuickGridTabRowRenderer
 			editorsList.get(i).removeValuechangeListener(dataBinder);
 		}
 	}
-
+	
 	/**
 	 * If isAddListener is true add Property Change Listener, otherwise Remove Property Change Listener
-	 *
+	 * 
 	 * @param isAddListener
-	 * @param col
+	 * @param col 
 	 */
 	public void addRemovePropertyChangeListener(boolean isAddListener, int col)
 	{
@@ -758,7 +757,7 @@ public class CustomQuickGridTabRowRenderer
 			}
 		}
 	} // addRemovePropertyChangeListener
-
+	
 	/**
 	 * @param code cell navigation code
 	 * @return true to add property change listener, false otherwise
@@ -770,7 +769,7 @@ public class CustomQuickGridTabRowRenderer
 			return true;
 		return false;
 	} // isAddRemoveListener
-
+	
 	/**
 	 * Set current row
 	 * @param row absolute row index
@@ -779,7 +778,7 @@ public class CustomQuickGridTabRowRenderer
 	{
 		int pgIndex = row >= 0 ? row % paging.getPageSize() : 0;
 		currentRow = ((Row) grid.getRows().getChildren().get(pgIndex));
-		currentRow.setStyle(CustomQuickGridTabRowRenderer.CURRENT_ROW_STYLE);
+		LayoutUtils.addSclass("current-row", currentRow);
 		setCurrentRow(currentRow);
 	}
 
@@ -939,7 +938,7 @@ public class CustomQuickGridTabRowRenderer
 	public void editCurrentRow() {
 		if (currentRow != null && currentRow.getParent() != null && currentRow.isVisible() && grid != null
 				&& grid.isVisible() && grid.getParent() != null && grid.getParent().isVisible()) {
-
+		
 			editing = true;
 
 			GridTableListModel model = (GridTableListModel) grid.getModel();
@@ -1039,9 +1038,9 @@ public class CustomQuickGridTabRowRenderer
 	public void setADWindowPanel(CustomAbstractADWindowContent windowPanel) {
 		if (this.m_windowPanel == windowPanel)
 			return;
-
+		
 		this.m_windowPanel = windowPanel;
-
+		
 		buttonListener = new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
 				WButtonEditor editor = (WButtonEditor) event.getSource();

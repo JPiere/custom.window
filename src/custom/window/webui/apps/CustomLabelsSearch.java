@@ -103,7 +103,7 @@ public class CustomLabelsSearch extends Div implements EventListener<Event> {
 
 	@Override
 	public void onEvent(Event event) throws Exception {
-		if (Events.ON_CHANGING.equals(event.getName())) {			
+		if (Events.ON_CHANGING.equals(event.getName())) {
 			//post ON_SEARCH_EVENT for ON_CHANGING event from bandbox
 			InputEvent inputEvent = (InputEvent) event;
 			String value = inputEvent.getValue();		

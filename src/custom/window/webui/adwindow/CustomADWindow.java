@@ -54,19 +54,15 @@ import org.compiere.util.Env;
 import org.zkoss.zk.ui.Component;
 
 /**
- * UI part for AD_Window
+ * Controller for AD_Window UI
  * @author  <a href="mailto:agramdass@gmail.com">Ashley G Ramdass</a>
  * @date    Feb 25, 2007
- * @version $Revision: 0.10 $
- *
- * @author Hideaki Hagiwara（h.hagiwara@oss-erp.co.jp）
- *
  */
 public class CustomADWindow extends AbstractUIPart
 {
 	/** Component attribute to hold reference to ancestor ADWindow instance **/
     public static final String AD_WINDOW_ATTRIBUTE_KEY = "jpiere.lab.webui.JPiereADWindow";
-    /** Content part for AD_Window (toolbar, tabbox, statusbar, etc) **/
+    /** Controller for AD_Window content (toolbar, tabbox, statusbar, etc) **/
 	private CustomADWindowContent windowContent;
 	/** Environment Context **/
     private Properties ctx;
@@ -89,9 +85,8 @@ public class CustomADWindow extends AbstractUIPart
 	private List<String> windowToolbarAdvancedList = null;
 	/** AD_Window_UU value **/
 	private String adWindowUUID;
-
+	
 	/**
-	 *
 	 * @param ctx
 	 * @param adWindowId
 	 */
@@ -99,9 +94,8 @@ public class CustomADWindow extends AbstractUIPart
     {
        this(ctx, adWindowId, null);
     }
-
+    
     /**
-     *
      * @param ctx
      * @param adWindowId
      * @param query
@@ -110,7 +104,7 @@ public class CustomADWindow extends AbstractUIPart
     {
     	 if(adWindowId <= 0)
              throw new IllegalArgumentException("Window Id is invalid");
-
+         
          this.ctx = ctx;
          this.adWindowId = adWindowId;
          MWindow window = MWindow.get(ctx, adWindowId);
@@ -125,9 +119,9 @@ public class CustomADWindow extends AbstractUIPart
         	 throw new ApplicationException(e.getMessage(), e);
          }
     }
-
+    
     /**
-     * Init ADWindowContent
+     * Create ADWindowContent
      */
     private void init()
     {
@@ -136,30 +130,31 @@ public class CustomADWindow extends AbstractUIPart
         windowTitle = windowContent.getTitle();
         image = windowContent.getImage();
     }
-
+    
     /**
-     *
+     * Get window title
      * @return title of window
      */
     public String getTitle()
     {
         return windowTitle;
     }
-
+    
     /**
+     * Get image for window title
      * @return image for window title
      */
     public MImage getMImage()
     {
     	return image;
     }
-
+    
     /**
      * Create component for content part (ADWindowContent).
      * @see ADWindowContent#createPart(Object)
      */
     @Override
-    protected Component doCreatePart(Component parent)
+    protected Component doCreatePart(Component parent) 
     {
     	windowPanelComponent = windowContent.createPart(parent);
     	windowPanelComponent.setAttribute(AD_WINDOW_ATTRIBUTE_KEY, this);
@@ -178,16 +173,18 @@ public class CustomADWindow extends AbstractUIPart
     @Override
 	public Component getComponent() {
 		return windowPanelComponent;
-	}
-
+	}	
+	
 	/**
+	 * Get ADWindowContent instance
 	 * @return ADWindowContent
 	 */
 	public CustomADWindowContent getADWindowContent() {
 		return windowContent;
 	}
-
+	
 	/**
+	 * Get list of toolbar button to exclude/restrict for current login role
 	 * @param AD_Tab_ID
 	 * @return list of toolbar button to exclude/restrict for current login role
 	 */
@@ -196,9 +193,9 @@ public class CustomADWindow extends AbstractUIPart
         if (tabRestrictList == null) {
         	tabRestrictList = new ArrayList<String>();
         	tabToolbarRestricMap.put(AD_Tab_ID, tabRestrictList);
-        	int[] restrictionList = MToolBarButtonRestrict.getOfTab(Env.getCtx(), MRole.getDefault().getAD_Role_ID(),
+        	int[] restrictionList = MToolBarButtonRestrict.getOfTab(Env.getCtx(), MRole.getDefault().getAD_Role_ID(), 
         			adWindowId, AD_Tab_ID, null);
-
+    		
 			for (int i = 0; i < restrictionList.length; i++)
 			{
 				int ToolBarButton_ID= restrictionList[i];
@@ -210,61 +207,66 @@ public class CustomADWindow extends AbstractUIPart
         }
         return tabRestrictList;
 	}
-
+	
 	/**
+	 * Get list of window toolbar button to exclude/restrict for current login role
 	 * @return list of window toolbar button to exclude/restrict for current login role
 	 */
-	public List<String> getWindowToolbarRestrictList() {
+	public List<String> getWindowToolbarRestrictList() {		
 		if (windowToolbarRestrictList == null) {
 			//load window restriction
 			windowToolbarRestrictList = new ArrayList<String>();
 	        int[] restrictionList = MToolBarButtonRestrict.getOfWindow(Env.getCtx(), MRole.getDefault().getAD_Role_ID(), adWindowId, false, null);
-
+	
 			for (int i = 0; i < restrictionList.length; i++)
 			{
 				int ToolBarButton_ID= restrictionList[i];
-
+	
 				X_AD_ToolBarButton tbt = new X_AD_ToolBarButton(Env.getCtx(), ToolBarButton_ID, null);
 				String restrictName = ADWindowToolbar.BTNPREFIX + tbt.getComponentName();
-				windowToolbarRestrictList.add(restrictName);
+				windowToolbarRestrictList.add(restrictName);		
 			}	// All restrictions
 		}
 		return windowToolbarRestrictList;
 	}
-
+	
 	/**
+	 * Get list of advance (IsAdvancedButton=Y) toolbar buttons for window
 	 * @return list of advance (IsAdvancedButton=Y) toolbar buttons for window
 	 */
-	public List<String> getWindowAdvancedButtonList() {
+	public List<String> getWindowAdvancedButtonList() {		
 		if (windowToolbarAdvancedList == null) {
 			//load window advance buttons
-			windowToolbarAdvancedList = new ArrayList<String>();
+			windowToolbarAdvancedList = new ArrayList<String>();			
 	        MToolBarButton[] buttons = MToolBarButton.getWindowAdvancedButtons();
-
+	
 			for (int i = 0; i < buttons.length; i++)
 			{
 				String restrictName = ADWindowToolbar.BTNPREFIX + buttons[i].getComponentName();
-				windowToolbarAdvancedList.add(restrictName);
+				windowToolbarAdvancedList.add(restrictName);		
 			}	// All restrictions
 		}
 		return windowToolbarAdvancedList;
 	}
 
 	/**
+	 * Get AD_Window_ID
 	 * @return AD_Window_ID
 	 */
 	public int getAD_Window_ID() {
 		return adWindowId;
 	}
-
+	
 	/**
+	 * Get AD_Window_UU
 	 * @return AD_Window_UU
 	 */
 	public String getAD_Window_UU() {
 		return adWindowUUID;
 	}
-
+	
 	/**
+	 * Get ADWindow instance by window number
 	 * @param windowNo
 	 * @return {@link ADWindow} instance for windowNo ( if any )
 	 */
@@ -272,10 +274,10 @@ public class CustomADWindow extends AbstractUIPart
 		Object window = SessionManager.getAppDesktop().findWindow(windowNo);
 		if (window != null && window instanceof CustomADWindow)
 			return (CustomADWindow) SessionManager.getAppDesktop().findWindow(windowNo);
-
+		
 		return null;
 	}
-
+	
 	/**
 	 * Find ADWindow instance that's the ancestor of comp
 	 * @param comp

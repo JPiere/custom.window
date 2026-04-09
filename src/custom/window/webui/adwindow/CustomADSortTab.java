@@ -69,6 +69,7 @@ import org.compiere.model.PO;
 import org.compiere.model.SystemProperties;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
+import org.compiere.util.DefaultEvaluatee;
 import org.compiere.util.Env;
 import org.compiere.util.KeyNamePair;
 import org.compiere.util.Msg;
@@ -89,17 +90,16 @@ import org.zkoss.zul.event.ListDataEvent;
  *	Tab to maintain Order/Sequence
  *
  * 	@author 	Jorg Janke
- * 	@version 	$Id: VSortTab.java,v 1.2 2006/07/30 00:51:28 jjanke Exp $
  *
- * @author Teo Sarca, SC ARHIPAC SERVICE SRL
+ *  @author Teo Sarca, SC ARHIPAC SERVICE SRL
  * 				FR [ 1779410 ] VSortTab: display ID for not visible columns
  *
- * @author victor.perez@e-evolution.com, e-Evolution
+ *  @author victor.perez@e-evolution.com, e-Evolution
  * 				FR [ 2826406 ] The Tab Sort without parent column
  *				<li> https://sourceforge.net/p/adempiere/feature-requests/776/
- * Zk Port
- * @author Low Heng Sin
- * @author Juan David Arboleda : Refactoring Yes and No List to work with multiple choice.
+ *  Zk Port
+ *  @author Low Heng Sin
+ *  @author Juan David Arboleda : Refactoring Yes and No List to work with multiple choice.
  *
  * @author Hideaki Hagiwara（h.hagiwara@oss-erp.co.jp）
  */
@@ -108,14 +108,14 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	/**
 	 * generated serial id
 	 */
-	private static final long serialVersionUID = -2238411612673317537L;
-	
+	private static final long serialVersionUID = 4302282658814599752L;
+
 	/**
 	 * default constructor
 	 */
 	public CustomADSortTab()
 	{
-	}	//	ADSortTab
+	}
 
 	/**
 	 * Initiate
@@ -145,7 +145,7 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 			}
 		});
 	} // init
-	
+
 	/**	Logger			*/
 	protected static final CLogger log = CLogger.getCLogger(CustomADSortTab.class);
 	private int			m_WindowNo;
@@ -170,7 +170,7 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	//
 	protected SimpleListModel noModel = new SimpleListModel() {
 		/**
-		 *
+		 * generated serial id
 		 */
 		private static final long serialVersionUID = 3488081120336708285L;
 
@@ -286,7 +286,7 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 					if (!Util.isEmpty(rs.getString(9)))
 					{
 						String value = rs.getString(9).replace(m_TableName + ".", isTranslated ? "tt." : "t.");
-						identifierSql.append(DB.TO_CHAR("("+value+")", AD_Reference_ID, Env.getAD_Language(Env.getCtx())));
+						identifierSql.append(DB.TO_CHAR("("+value+")", AD_Reference_ID, Env.getAD_Language(Env.getCtx())));			
 					}
 					else
 						identifierSql.append(DB.TO_CHAR((isTranslated ? "tt." : "t.")+rs.getString(3), AD_Reference_ID, Env.getAD_Language(Env.getCtx())));
@@ -318,7 +318,7 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	}	//	dynInit
 
 	/**
-	 * 	Static Layout
+	 * 	Layout panel
 	 * 	@throws Exception
 	 */
 	private void init() throws Exception
@@ -421,8 +421,8 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 		hlayout.appendChild(yesList);
 	}	//	Init
 
-	/* (non-Javadoc)
-	 * @see org.compiere.grid.APanelTab#loadData()
+	/**
+	 * Load data
 	 */
 	public void loadData()
 	{
@@ -475,10 +475,10 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 		//FR [ 2826406 ]
 		int ID = 0;
 		if(m_ParentColumnName != null)
-		{
+		{	
 			ID = Env.getContextAsInt(Env.getCtx(), m_WindowNo, m_ParentColumnName);
 			if (log.isLoggable(Level.FINE)) log.fine(sql.toString() + " - ID=" + ID);
-		}
+		}	
 		else
 		{
 			ID = 1;
@@ -495,7 +495,7 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 				pstmt.setString(idx++, Env.getAD_Language(Env.getCtx()));
 
 			pstmt.setInt(idx++, Env.getAD_Client_ID(Env.getCtx()));
-
+			
 			rs = pstmt.executeQuery();
 			while (rs.next())
 			{
@@ -548,7 +548,7 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 
 	/**
 	 * Set tab change status.
-	 * @param value
+	 * @param value true for dirty/changed state, false otherwise
 	 */
 	public void setIsChanged(boolean value) {
 		isChanged = value;
@@ -559,14 +559,15 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	}
 
 	/**
+	 * Is tab has changes
 	 * @return true if tab has changes
 	 */
 	public boolean isChanged() {
 		return isChanged;
 	}
-
+	
 	/**
-	 * Move an item between yes and no list.
+	 * Move an item between yes and no list.<br/>
 	 * Delegate to {@link #migrateLists(Listbox, Listbox, int)}
 	 * @param event
 	 */
@@ -579,8 +580,8 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 		Listbox listFrom = (source == bAdd || source == noList) ? noList : yesList;
 		Listbox listTo =  (source == bAdd || source == noList) ? yesList : noList;
 
-		int endIndex = yesList.getIndexOfItem(listTo.getSelectedItem());
-		//Listto is empty.
+		int endIndex = yesList.getIndexOfItem(listTo.getSelectedItem());	
+		//Listto is empty. 
 		if (endIndex<0 )
 			endIndex=0;
 
@@ -595,7 +596,7 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	 */
 	protected void migrateLists (Listbox listFrom , Listbox listTo , int endIndex)
 	{
-		int index = 0;
+		int index = 0; 
 		SimpleListModel lmFrom = (listFrom == yesList) ? yesModel:noModel;
 		SimpleListModel lmTo = (lmFrom == yesModel) ? noModel:yesModel;
 		Set<?> selectedItems = listFrom.getSelectedItems();
@@ -607,7 +608,7 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 			selObjects.add(selObject);
 		}
 		index = 0;
-		Arrays.sort(selObjects.toArray());
+		Arrays.sort(selObjects.toArray());	
 		for (ListElement selObject : selObjects)
 		{
 			if (selObject == null || !selObject.isUpdateable())
@@ -693,13 +694,13 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 
 	/**
 	 * 	Move items within Yes List with Drag Event and Multiple Choice
-	 *  @param endIndex
-	 *  @param selObjects
+	 *  @param endIndex move items after endIndex
+	 *  @param selObjects selected items to move
 	 */
 	protected void migrateValueWithinYesList (int endIndex, List<ListElement> selObjects)
 	{
 		int iniIndex =0;
-		Arrays.sort(selObjects.toArray());
+		Arrays.sort(selObjects.toArray());	
 		ListElement selObject= null;
 		ListElement endObject = (ListElement)yesModel.getElementAt(endIndex);
 		for (ListElement selected : selObjects) {
@@ -707,10 +708,10 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 			selObject = (ListElement)yesModel.getElementAt(iniIndex);
 			yesModel.removeElement(selObject);
 			endIndex = yesModel.indexOf(endObject);
-			yesModel.add(endIndex, selObject);
-		}
+			yesModel.add(endIndex, selObject);			
+		}	
 		yesList.removeAllItems();
-	    for(int i=0 ; i<yesModel.getSize(); i++) {
+	    for(int i=0 ; i<yesModel.getSize(); i++) { 	
 			ListElement pp = (ListElement)yesModel.getElementAt(i);
 			yesList.addItem(new KeyNamePair(pp.m_key, pp.getName()));
 		}
@@ -725,7 +726,6 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	{
 		adWindowPanel = panel;
 	}	//	registerAPanel
-
 
 	/**
 	 * Save changes to db.
@@ -743,25 +743,25 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 		Trx trx = Trx.get(Trx.createTrxName("ADSortTab_save"), true);
 		try {
 			trx.start();
-		//	noList - Set SortColumn to null and optional YesNo Column to 'N'
-		for (int i = 0; i < noModel.getSize(); i++)
-		{
-			ListElement pp = (ListElement)noModel.getElementAt(i);
-			if (!pp.isUpdateable())
-				continue;
-			if(pp.getSortNo() == 0 && (m_ColumnYesNoName == null || !pp.isYes()))
-				continue; // no changes
-			//
+			//	noList - Set SortColumn to null and optional YesNo Column to 'N'
+			for (int i = 0; i < noModel.getSize(); i++)
+			{
+				ListElement pp = (ListElement)noModel.getElementAt(i);
+				if (!pp.isUpdateable())
+					continue;
+				if(pp.getSortNo() == 0 && (m_ColumnYesNoName == null || !pp.isYes()))
+					continue; // no changes
+				//			
 				PO po = table.getPO(pp.getKey(), trx.getTrxName());
 				po.set_ValueOfColumn(m_ColumnSortName, 0);
-			if (m_ColumnYesNoName != null)
+				if (m_ColumnYesNoName != null)
 					po.set_ValueOfColumn(m_ColumnYesNoName, "N");
 				try {
 					po.saveEx();
 					ListElement backup = new ListElement(pp.getKey(), pp.getName(), pp.getSortNo(), pp.isYes(), pp.getAD_Client_ID(), pp.getAD_Org_ID());
 					noModelBackup.put(i, backup);
-				pp.setSortNo(0);
-				pp.setIsYes(false);
+					pp.setSortNo(0);
+					pp.setIsYes(false);
 				} catch (Exception e) {
 					ok = false;
 					trx.rollback();
@@ -770,8 +770,8 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 					info.append(pp.getName());
 					log.log(Level.SEVERE, "NoModel - Not updated: " + m_KeyColumnName + "=" + pp.getKey(), e);
 					break;
+				}
 			}
-		}
 			
 			if (ok) {
 				//	yesList - Set SortColumn to value and optional YesNo Column to 'Y'
@@ -827,8 +827,8 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 				for(Integer index : yesModelBackup.keySet()) {
 					ListElement e = yesModelBackup.get(index);
 					yesModel.setElementAt(e, index);
+				}
 			}
-		}
 		} finally {
 			trx.close();
 		}
@@ -847,7 +847,7 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	 */
 	private class ListElement extends NamePair {
 		/**
-		 *
+		 * generated serial id
 		 */
 		private static final long serialVersionUID = -6319536467438753815L;
 		private int		m_key;
@@ -926,8 +926,8 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	}
 
 	/**
+	 * Listener for drop event
 	 * @author eslatis
-	 *
 	 */
 	private class DragListener implements EventListener<Event>
 	{
@@ -950,7 +950,7 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 
 				if (!startItem.isSelected())
 					startItem.setSelected(true);
-
+				
 				if (!(startItem.getListbox() == endItem.getListbox()))
 				{
 					Listbox listFrom = (Listbox)startItem.getListbox();
@@ -960,12 +960,12 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 				} else if (startItem.getListbox() == endItem.getListbox() && startItem.getListbox() == yesList)
 				{
 					List<ListElement> selObjects = new ArrayList<ListElement>();
-					endIndex = yesList.getIndexOfItem(endItem);
+					endIndex = yesList.getIndexOfItem(endItem);	
 					for (Object obj : yesList.getSelectedItems()) {
 						ListItem listItem = (ListItem) obj;
 						int index = yesList.getIndexOfItem(listItem);
-						ListElement selObject = (ListElement)yesModel.getElementAt(index);
-						selObjects.add(selObject);
+						ListElement selObject = (ListElement)yesModel.getElementAt(index);				
+						selObjects.add(selObject);						
 					}
 					migrateValueWithinYesList (endIndex, selObjects);
 			   }
@@ -979,7 +979,7 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	    	if (getAttribute(ATTR_ON_ACTIVATE_POSTED) != null) {
 	    		return;
 	    	}
-
+	    	
 	    	setAttribute(ATTR_ON_ACTIVATE_POSTED, Boolean.TRUE);
     	}
 
@@ -1067,10 +1067,14 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	@Override
 	public void switchRowPresentation() {
 	}
+	
+	@Override
+	public void onAfterFind() {
+	}
 
 	@Override
 	public String get_ValueAsString(String variableName) {
-		return Env.getContext(Env.getCtx(), m_WindowNo, variableName);
+		return new DefaultEvaluatee(getGridTab(), m_WindowNo, tabNo).get_ValueAsString(Env.getCtx(), variableName);
 	}
 
 	@Override
@@ -1097,7 +1101,7 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 		this.detailPaneMode = detailMode;
 		ZKUpdateUtil.setVflex(this, "true");
 	}
-
+	
 	@Override
 	public boolean isDetailPaneMode() {
 		return this.detailPaneMode;
@@ -1167,11 +1171,11 @@ public class CustomADSortTab extends Panel implements CustomIADTabpanel
 	}
 
 	@Override
-	public boolean isEnableQuickFormButton()
+	public boolean isEnableQuickFormButton() 
 	{
 		return false;
 	}
-	
+
 	@Override
 	public List<org.zkoss.zul.Button> getToolbarButtons()
 	{
